@@ -1,4 +1,6 @@
-from fastapi import FastAPI
+import io
+
+from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
@@ -13,6 +15,9 @@ from pm4py.visualization.petri_net import visualizer as pn_visualizer
 from pm4py.objects.bpmn.exporter import exporter as bpmn_exporter
 from io import BytesIO
 import pm4py
+
+from os import listdir
+from os.path import isfile, join
 
 app = FastAPI()
 
@@ -30,15 +35,66 @@ app.add_middleware(
 def read_root():
   return {"hello": "World"}
 
-@app.get("/event-log")
-def read_event_log():
-  df = pd.read_csv('examples/data_log.csv')
+@app.get("/availible-logs")
+def read_availible_logs():
+  files = [f for f in listdir("examples") if isfile(join("examples", f))]
+
+  return files
+
+
+@app.get("/event-log/{file_name}")
+def read_event_log(file_name: str):
+  df = pd.read_csv(f'examples/{file_name}')
 
   return df.head(50).to_dict(orient="records")
 
-@app.get("/diagram")
-def read_diagram():
-  df = pd.read_csv('examples/data_log.csv')
+@app.get("/diagram/{file_name}")
+def read_diagram(file_name: str):
+  df = pd.read_csv(f'examples/{file_name}')
+
+  # Convert the 'Timestamp' column to a datetime format
+  df['Timestamp'] = pd.to_datetime(df['Timestamp'])
+
+  # Use the exact column names from the diagnostic output
+  df.rename(columns={'Case_ID': 'case:concept:name',
+                    'Activity': 'concept:name',
+                    'Timestamp': 'time:timestamp'}, inplace=True)
+
+  # Convert the DataFrame to a PM4Py event log object
+  event_log = log_converter.apply(df)
+
+  bpmn_graph = pm4py.discover_bpmn_inductive(event_log)
+
+  temp_file = tempfile.NamedTemporaryFile(
+    mode='w',
+    suffix='.bpmn',
+    delete=False
+  )
+
+  temp_file_path = temp_file.name
+  temp_file.close()
+
+  pm4py.write_bpmn(bpmn_graph, temp_file_path)
+
+
+
+  return FileResponse(
+    path=temp_file_path,
+    media_type="application/xml",
+    filename="discovered_process.bpmn"
+  )
+
+@app.post("/event-log")
+async def read_event_log(file: UploadFile = File(...)):
+  contents = await file.read()
+  df = pd.read_csv(io.StringIO(contents.decode('utf-8')))
+
+  return df.head(50).to_dict(orient="records")
+
+@app.post("/diagram")
+async def create_diagram(file: UploadFile = File(...)):
+  contents = await file.read()
+  df = pd.read_csv(io.StringIO(contents.decode('utf-8')))
 
   # Convert the 'Timestamp' column to a datetime format
   df['Timestamp'] = pd.to_datetime(df['Timestamp'])

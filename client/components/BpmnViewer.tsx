@@ -4,16 +4,13 @@ import { useEffect, useRef, useState } from "react"
 import Modeler from "bpmn-js/lib/Modeler"
 import "bpmn-js/dist/assets/diagram-js.css"
 import "bpmn-font/dist/css/bpmn-embedded.css"
+import { Button } from "./ui/button"
 
 interface BpmnViewerProps {
-  apiUrl: string // Your FastAPI endpoint URL
-  algorithm?: "inductive" | "alpha" | "heuristics" // Optional algorithm parameter
+  xml?: string
 }
 
-export default function BpmnViewer({
-  apiUrl,
-  algorithm = "inductive",
-}: BpmnViewerProps) {
+export default function BpmnViewer({ xml }: BpmnViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [bpmnModeler, setBpmnModeler] = useState<Modeler | null>(null)
   const [loading, setLoading] = useState<boolean>(false)
@@ -44,13 +41,9 @@ export default function BpmnViewer({
     setError(null)
 
     try {
-      // Construct API URL with algorithm parameter if needed
-      const url = algorithm ? `${apiUrl}/${algorithm}` : apiUrl
+      if (!xml) return
 
-      // Fetch BPMN XML from FastAPI
-      const response = await fetch("http://127.0.0.1:8000/diagram")
-
-      const bpmnXML = await response.text()
+      const bpmnXML = xml
 
       // Import XML into bpmn-js
       await bpmnModeler.importXML(bpmnXML)
@@ -73,40 +66,59 @@ export default function BpmnViewer({
     if (bpmnModeler) {
       loadBpmnDiagram()
     }
-  }, [bpmnModeler, apiUrl, algorithm])
+  }, [bpmnModeler, xml])
 
   return (
     <div className='w-full h-full flex flex-col'>
       {/* Controls */}
       <div className='bg-white border-b p-4 flex gap-2'>
-        <button
+        <Button
           onClick={loadBpmnDiagram}
           disabled={loading}
-          className='px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400'
+          className='px-4 py-2 bg-blue-500 text-white hover:bg-blue-600 disabled:bg-gray-400'
         >
           {loading ? "Loading..." : "Refresh Diagram"}
-        </button>
+        </Button>
 
         {/* Optional: Download button */}
-        <button
+        <Button
           onClick={async () => {
             try {
-              const { xml } = await bpmnModeler!.saveXML({ format: true })
-              const blob = new Blob([xml], { type: "application/xml" })
+              const { svg } = await bpmnModeler!.saveSVG()
+              const blob = new Blob([svg], { type: "image/svg+xml" })
               const url = URL.createObjectURL(blob)
               const a = document.createElement("a")
               a.href = url
-              a.download = "diagram.bpmn"
+              a.download = "diagram.svg"
               a.click()
               URL.revokeObjectURL(url)
             } catch (err) {
               console.error("Failed to save diagram:", err)
             }
           }}
-          className='px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600'
+          className='px-4 py-2 bg-green-500 text-white hover:bg-green-600'
         >
-          Download BPMN
-        </button>
+          Download Diagram
+        </Button>
+        <Button
+          onClick={async () => {
+            try {
+              const { svg } = await bpmnModeler!.saveSVG()
+              const blob = new Blob([svg], { type: "image/svg+xml" })
+
+              const clipboardItem = new ClipboardItem({
+                [blob.type]: blob,
+              })
+
+              await navigator.clipboard.write([clipboardItem])
+            } catch (err) {
+              console.error("Failed to save diagram:", err)
+            }
+          }}
+          className='px-4 py-2 bg-green-500 text-white hover:bg-green-600'
+        >
+          Copy Diagram
+        </Button>
       </div>
 
       {/* Error display */}
