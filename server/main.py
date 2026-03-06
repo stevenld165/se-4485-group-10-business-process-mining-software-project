@@ -1,5 +1,7 @@
 import io
 
+from websockets import Response
+
 from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
@@ -13,6 +15,7 @@ from pm4py.visualization.dfg import visualizer as dfg_visualizer
 from pm4py.algo.discovery.inductive import algorithm as inductive_miner
 from pm4py.visualization.petri_net import visualizer as pn_visualizer
 from pm4py.objects.bpmn.exporter import exporter as bpmn_exporter
+from pm4py.visualization.bpmn import visualizer as bpmn_visualizer
 from io import BytesIO
 import pm4py
 
@@ -21,7 +24,29 @@ from os.path import isfile, join
 
 app = FastAPI()
 
-origins = ["*"]
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+app = FastAPI()
+
+# Define the exact URL of your frontend
+# If you use localhost:3000 in the browser, use localhost:3000 here.
+origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,             # Solves "Missing Access-Control-Allow-Origin"
+    allow_credentials=True,
+    allow_methods=["*"],               # Required for the 'Preflight' OPTIONS request
+    allow_headers=["*"],               # Allows 'Content-Type', 'Authorization', etc.
+)
+
+@app.post("/diagram")
+async def generate_diagram():
+    return {"xml": "<bpmn:definitions ... />"}
 
 app.add_middleware(
   CORSMiddleware,

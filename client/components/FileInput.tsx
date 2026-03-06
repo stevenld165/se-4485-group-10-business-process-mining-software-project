@@ -5,7 +5,11 @@ import { Button } from "./ui/button"
 import { Field, FieldDescription, FieldLabel } from "./ui/field"
 import { Input } from "./ui/input"
 
-export default function FileInput({ onFileSubmit }) {
+interface FileInputProps {
+  onFileSubmit: (file: File) => void
+}
+
+export default function FileInput({ onFileSubmit }:FileInputProps) {
   const [file, setFile] = useState<File>()
 
   const handleSubmit = async () => {
@@ -15,9 +19,9 @@ export default function FileInput({ onFileSubmit }) {
   }
 
   return (
-    <>
+    <div className="space-y-4">
+      <h1 className='text-2xl font-bold'>Upload Event Log</h1>
       <Field className='max-w-sm'>
-        <FieldLabel htmlFor='event-log-input'>Upload event log</FieldLabel>
         <Input
           id='event-log-input'
           type='file'
@@ -31,6 +35,6 @@ export default function FileInput({ onFileSubmit }) {
         </FieldDescription>
       </Field>
       <Button onClick={handleSubmit}>Submit</Button>
-    </>
+    </div>
   )
 }

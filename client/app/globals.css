@@ -124,3 +124,14 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer components{
+  .upload-dropzone {
+    @apply relative flex flex-col items-center justify-center;
+    @apply rounded-lg border-2 border-dashed border-gray-300;
+    @apply p-2 text-center bg-gray-50 transition-all;
+    @apply hover:border-indigo-500 hover:bg-gray-100;
+    @apply focus-within:ring-2 focus-within:ring-indigo-500 focus-within:outline-none;
+  }
+}
+
