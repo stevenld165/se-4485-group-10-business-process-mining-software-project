@@ -9,6 +9,7 @@ from fastapi.responses import FileResponse
 import tempfile
 
 import pandas as pd
+
 from pm4py.objects.conversion.log import converter as log_converter
 from pm4py.algo.discovery.dfg import algorithm as dfg_discovery
 from pm4py.visualization.dfg import visualizer as dfg_visualizer
@@ -21,11 +22,6 @@ import pm4py
 
 from os import listdir
 from os.path import isfile, join
-
-app = FastAPI()
-
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
@@ -43,10 +39,6 @@ app.add_middleware(
     allow_methods=["*"],               # Required for the 'Preflight' OPTIONS request
     allow_headers=["*"],               # Allows 'Content-Type', 'Authorization', etc.
 )
-
-@app.post("/diagram")
-async def generate_diagram():
-    return {"xml": "<bpmn:definitions ... />"}
 
 app.add_middleware(
   CORSMiddleware,
