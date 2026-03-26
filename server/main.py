@@ -1,4 +1,6 @@
 import io
+import json
+import uuid
 
 from websockets import Response
 
@@ -17,11 +19,14 @@ from pm4py.algo.discovery.inductive import algorithm as inductive_miner
 from pm4py.visualization.petri_net import visualizer as pn_visualizer
 from pm4py.objects.bpmn.exporter import exporter as bpmn_exporter
 from pm4py.visualization.bpmn import visualizer as bpmn_visualizer
+from pm4py.objects.bpmn.obj import BPMN
 from io import BytesIO
 import pm4py
 
 from os import listdir
 from os.path import isfile, join
+
+import xml.etree.ElementTree as ET
 
 app = FastAPI()
 
@@ -116,6 +121,13 @@ async def create_diagram(file: UploadFile = File(...)):
   # Convert the 'Timestamp' column to a datetime format
   df['Timestamp'] = pd.to_datetime(df['Timestamp'])
 
+  role_to_activities = (
+        df.groupby('Role')['Activity']
+        .apply(set)
+        .to_dict()
+    )
+  
+
   # Use the exact column names from the diagnostic output
   df.rename(columns={'Case_ID': 'case:concept:name',
                     'Activity': 'concept:name',
@@ -125,6 +137,7 @@ async def create_diagram(file: UploadFile = File(...)):
   event_log = log_converter.apply(df)
 
   bpmn_graph = pm4py.discover_bpmn_inductive(event_log)
+
 
   temp_file = tempfile.NamedTemporaryFile(
     mode='w',
@@ -137,7 +150,23 @@ async def create_diagram(file: UploadFile = File(...)):
 
   pm4py.write_bpmn(bpmn_graph, temp_file_path)
 
+  # Serialize roleToActivities with list values for JSON embedding
+  role_map_json = json.dumps({
+      role: list(activities)
+      for role, activities in role_to_activities.items()
+  })
 
+  tree = ET.parse(temp_file_path)
+  root = tree.getroot()
+  BPMN_NS = 'http://www.omg.org/spec/BPMN/20100524/MODEL'
+
+  process_el = root.find(f'{{{BPMN_NS}}}process')
+
+  # Embed role map as a custom attribute — the frontend reads this to
+  # know which activities belong to which lane before injecting lanes
+  process_el.set('data-role-map', role_map_json)
+
+  tree.write(temp_file_path, xml_declaration=True, encoding='unicode')
 
   return FileResponse(
     path=temp_file_path,

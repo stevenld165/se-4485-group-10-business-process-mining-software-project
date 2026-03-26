@@ -21,4 +21,8 @@ export const columns: ColumnDef<Entry>[] = [
     accessorKey: "Timestamp",
     header: "Timestamp",
   },
+  {
+    accessorKey: "Role",
+    header: "Role",
+  },
 ]
