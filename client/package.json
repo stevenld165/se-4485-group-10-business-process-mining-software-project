@@ -10,10 +10,12 @@
   },
   "dependencies": {
     "@tanstack/react-table": "^8.21.3",
+    "@types/dagre": "^0.7.54",
     "bpmn-font": "^0.12.1",
     "bpmn-js": "^18.12.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "dagre": "^0.8.5",
     "lucide-react": "^0.575.0",
     "next": "^16.1.6",
     "radix-ui": "^1.4.3",
