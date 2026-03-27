@@ -409,8 +409,9 @@ export default function BpmnViewer({ xml }: BpmnViewerProps) {
       await applyDagreLayout(bpmnModeler)
 
       // Optional: Fit diagram to view
-      const canvas = bpmnModeler.get("canvas")
-      canvas.zoom("fit-viewport")
+      const canvas = bpmnModeler.get("canvas") as {
+        zoom: (fit: "fit-viewport", padding: number | "auto") => void
+      }
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to load BPMN diagram",
