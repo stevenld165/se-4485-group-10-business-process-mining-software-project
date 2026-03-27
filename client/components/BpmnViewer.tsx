@@ -30,10 +30,14 @@ function injectLanes(
 
   // Build activityName -> elementId from existing process children
   const nameToId: Record<string, string> = {}
+  const idToElement: Record<string, Element> = {}
   Array.from(process.children).forEach((el) => {
     const name = el.getAttribute("name")
     const id = el.getAttribute("id")
-    if (name && id) nameToId[name] = id
+    if (name && id) {
+      nameToId[name] = id
+      idToElement[id] = el
+    }
   })
 
   // Remove any stale laneSets
@@ -59,7 +63,62 @@ function injectLanes(
       ref.textContent = nodeId
       lane.appendChild(ref)
     })
+    // Assign control nodes (start/end/gateway) that point to this lane's activities
+    const assignedIds = new Set(
+      activities.map((a) => nameToId[a]).filter(Boolean)
+    )
 
+    Array.from(process.children).forEach((el) => {
+      const id = el.getAttribute("id")
+      if (!id || assignedIds.has(id)) return
+
+      const localName = el.localName.toLowerCase()
+      const isControlNode =
+        localName.includes("startevent") ||
+        localName.includes("endevent") ||
+        localName.includes("gateway") ||
+        localName.includes("intermediatecatch") ||
+        localName.includes("intermediatethrow")
+
+      if (!isControlNode) return
+
+      // Check if this control node points to any activity in this lane
+      const outgoing = Array.from(process.children).filter(
+        (sf) =>
+          sf.localName.toLowerCase().includes("sequenceflow") && 
+          sf.getAttribute("sourceRef") === id
+      )
+
+      for (const sf of outgoing) {
+        const targetId = sf.getAttribute("targetRef")
+        if (targetId && assignedIds.has(targetId)) {
+          const ref = doc.createElementNS(BPMN, "flowNodeRef")
+          ref.textContent = id
+          lane.appendChild(ref)
+          assignedIds.add(id)
+          break
+        }
+      }
+
+      // Fallback: check incoming (for end events)
+      if (!assignedIds.has(id)) {
+        const incoming = Array.from(process.children).filter(
+          (sf) =>
+            sf.localName === "sequenceFlow" &&
+            sf.getAttribute("targetRef") === id
+        )
+        for (const sf of incoming) {
+          const sourceId = sf.getAttribute("sourceRef")
+          if (sourceId && assignedIds.has(sourceId)) {
+            const ref = doc.createElementNS(BPMN, "flowNodeRef")
+            ref.textContent = id
+            lane.appendChild(ref)
+            assignedIds.add(id)
+            break
+          }
+        }
+      }
+    })
     laneSet.appendChild(lane)
 
     // Placeholder BPMNShape for the lane (dagre will overwrite bounds)
