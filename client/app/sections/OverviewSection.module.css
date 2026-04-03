@@ -1,0 +1,76 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 2rem;
+}
+
+.header {
+  margin-bottom: 1.5rem;
+}
+
+.title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0 0 0.25rem;
+}
+
+.subtitle {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  overflow: hidden;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--border-radius-lg, 12px);
+  border: 0.5px solid var(--color-border-tertiary);
+  background-color: var(--color-background-primary);
+  overflow: hidden;
+  cursor: pointer;
+  text-align: left;
+  padding: 0;
+  transition: border-color 200ms, box-shadow 200ms;
+}
+
+.panel:hover {
+  border-color: var(--color-border-secondary);
+  box-shadow: 0 0 0 3px var(--color-background-secondary);
+}
+
+.panelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-bottom: 0.5px solid var(--color-border-tertiary);
+  background-color: var(--color-background-secondary);
+}
+
+.panelTitle {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.expandIcon {
+  width: 14px;
+  height: 14px;
+  color: var(--color-text-tertiary);
+}
+
+.panelBody {
+  flex: 1;
+  overflow: hidden;
+  pointer-events: none;
+}
