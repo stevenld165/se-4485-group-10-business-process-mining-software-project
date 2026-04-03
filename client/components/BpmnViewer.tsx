@@ -10,6 +10,7 @@ import {
 import Modeler from "bpmn-js/lib/Modeler"
 import "bpmn-js/dist/assets/diagram-js.css"
 import "bpmn-font/dist/css/bpmn-embedded.css"
+import "bpmn-js/dist/assets/bpmn-js.css"
 import { Button } from "./ui/button"
 
 import dagre from "dagre"
