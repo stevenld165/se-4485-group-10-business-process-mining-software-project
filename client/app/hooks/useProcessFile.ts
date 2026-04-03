@@ -18,9 +18,7 @@ export const useProcessFile = () => {
         method: "POST",
         body: formData,
       })
-
       const eventLogJson = await eventLogResponse.json()
-
       const bpmnDiagramResponse = await fetch("http://127.0.0.1:8000/diagram", {
         method: "POST",
         body: formData,
