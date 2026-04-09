@@ -1,7 +1,7 @@
 import BpmnViewer from "@/components/BpmnViewer"
 import { DataTable } from "../event-logs/data-table"
 import { ColumnDef } from "@tanstack/react-table"
-import styles from "./BpmSection.module.css"
+import styles from "./BpmnSection.module.css"
 
 interface BpmnSectionProps<TData, TValue> {
   xml: string
@@ -19,12 +19,6 @@ export default function BpmnSection<TData, TValue>({ xml, data, columns }: BpmnS
       <div className={styles.body}>
         <div className={styles.viewer}>
           <BpmnViewer xml={xml} />
-        </div>
-        <div className={styles.sidebar}>
-          <div className={styles.sidebarHeader}>Event log</div>
-          <div className={styles.tableScroll}>
-            <DataTable columns={columns} data={data} />
-          </div>
         </div>
       </div>
     </div>

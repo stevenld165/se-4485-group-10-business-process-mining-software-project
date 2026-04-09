@@ -15,7 +15,7 @@ export default function ClientPage() {
   const { eventLogData, bpmnXml, processFile } = useProcessFile()
   const [activeSection, setActiveSection] = useState<Section>("upload")
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-
+  const [isUploadOpen, setIsUploadOpen] = useState(false)
   const handleFileSubmit = (file: File) => {
     processFile(file)
     setActiveSection("overview")
@@ -24,7 +24,12 @@ export default function ClientPage() {
   return (
     <div className={styles.pageWrapper}>
       <div className={styles.appBody}>
-
+        {/*Upload modal*/}
+        <UploadSection
+          onFileSubmit={handleFileSubmit}
+          isOpen={isUploadOpen}
+          onClose={() => setIsUploadOpen(false)}
+        />
         {/* Sidebar */}
         <nav className={`${styles.sidebar} ${sidebarCollapsed ? styles.sidebarCollapsed : ""}`}>
 
@@ -53,7 +58,7 @@ export default function ClientPage() {
 
           <button
             className={`${styles.sidebarItem} ${activeSection === "upload" ? styles.sidebarItemActive : ""}`}
-            onClick={() => setActiveSection("upload")}
+            onClick={() => setIsUploadOpen(true)}
             title="Upload event log"
           >
             <svg className={styles.sidebarIcon} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -73,7 +78,7 @@ export default function ClientPage() {
             </svg>
             {!sidebarCollapsed && <span>Overview</span>}
           </button>
-
+          
           <button
             className={`${styles.sidebarItem} ${activeSection === "eventlog" ? styles.sidebarItemActive : ""}`}
             onClick={() => setActiveSection("eventlog")}
@@ -102,7 +107,13 @@ export default function ClientPage() {
         {/* Main content */}
         <main className={styles.main}>
           <div className={`${styles.page} ${activeSection === "upload" ? styles.pageActive : ""}`}>
-            <UploadSection onFileSubmit={handleFileSubmit} />
+            <OverviewSection
+              columns={columns}
+              data={eventLogData}
+              xml={bpmnXml || ""}
+              onSelectEventLog={() => setActiveSection("eventlog")}
+              onSelectBpmn={() => setActiveSection("bpmn")}
+            />
           </div>
           <div className={`${styles.page} ${activeSection === "overview" ? styles.pageActive : ""}`}>
             <OverviewSection

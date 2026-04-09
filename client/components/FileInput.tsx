@@ -1,5 +1,6 @@
 "use client"
 
+import styles from "./FileInput.module.css"
 import { useContext, useState } from "react"
 import { Button } from "./ui/button"
 import { Field, FieldDescription, FieldLabel } from "./ui/field"
@@ -25,6 +26,8 @@ export default function FileInput({ onFileSubmit }:FileInputProps) {
         <Input
           id='event-log-input'
           type='file'
+          accept =".csv"
+          className={styles.fileInput}
           onChange={(event) => {
             if (event.target.files && event.target.files.length > 0)
               setFile(event.target.files[0])
