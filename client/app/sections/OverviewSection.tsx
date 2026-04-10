@@ -1,3 +1,6 @@
+"use client"
+
+import { useRef, useState, useCallback } from "react"
 import BpmnViewer from "@/components/BpmnViewer"
 import { DataTable } from "../event-logs/data-table"
 import { ColumnDef } from "@tanstack/react-table"
@@ -18,39 +21,69 @@ export default function OverviewSection<TData, TValue>({
   onSelectEventLog,
   onSelectBpmn,
 }: OverviewSectionProps<TData, TValue>) {
+  const [leftPercent, setLeftPercent] = useState(50)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const dragging = useRef(false)
+
+  const onMouseDown = useCallback(() => {
+    dragging.current = true
+    document.body.style.cursor = "col-resize"
+    document.body.style.userSelect = "none"
+  }, [])
+
+  const onMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!dragging.current || !containerRef.current) return
+    const rect = containerRef.current.getBoundingClientRect()
+    const newLeft = ((e.clientX - rect.left) / rect.width) * 100
+    setLeftPercent(Math.min(Math.max(newLeft, 20), 80))
+  }, [])
+
+  const onMouseUp = useCallback(() => {
+    dragging.current = false
+    document.body.style.cursor = ""
+    document.body.style.userSelect = ""
+  }, [])
+
   return (
     <div className={styles.wrapper}>
       <div className={styles.header}>
         <h2 className={styles.title}>Overview</h2>
-        <p className={styles.subtitle}>Click either panel to expand it</p>
+        <p className={styles.subtitle}>Drag the divider to resize panels</p>
       </div>
-      <div className={styles.grid}>
 
+      <div
+        ref={containerRef}
+        className={styles.panelGroup}
+        onMouseMove={onMouseMove}
+        onMouseUp={onMouseUp}
+        onMouseLeave={onMouseUp}
+      >
         {/* Event log panel */}
-        <button className={styles.panel} onClick={onSelectEventLog} aria-label="Expand event log">
-          <div className={styles.panelHeader}>
+        <div className={styles.panel} style={{ width: `${leftPercent}%` }}>
+          <div className={styles.panelHeader} onClick={onSelectEventLog} style={{ cursor: "pointer" }}>
             <span className={styles.panelTitle}>Event log</span>
-            <svg className={styles.expandIcon} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <path d="M10 3h3v3M9 7l4-4M6 13H3v-3M7 9l-4 4"/>
-            </svg>
+            <span className={styles.panelNav}>Open →</span>
           </div>
           <div className={styles.panelBody}>
             <DataTable columns={columns} data={data} />
           </div>
-        </button>
+        </div>
+
+        {/* Drag handle */}
+        <div className={styles.resizeHandle} onMouseDown={onMouseDown}>
+          <div className={styles.resizeBar} />
+        </div>
 
         {/* BPMN panel */}
-        <button className={styles.panel} onClick={onSelectBpmn} aria-label="Expand BPMN diagram">
-          <div className={styles.panelHeader}>
+        <div className={styles.panel} style={{ width: `${100 - leftPercent}%` }}>
+          <div className={styles.panelHeader} onClick={onSelectBpmn} style={{ cursor: "pointer" }}>
             <span className={styles.panelTitle}>BPMN diagram</span>
-            <svg className={styles.expandIcon} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <path d="M10 3h3v3M9 7l4-4M6 13H3v-3M7 9l-4 4"/>
-            </svg>
+            <span className={styles.panelNav}>Open →</span>
           </div>
           <div className={styles.panelBody}>
             <BpmnViewer xml={xml} />
           </div>
-        </button>
+        </div>
 
       </div>
     </div>

@@ -37,8 +37,8 @@ export default function ClientPage() {
           <div className={styles.sidebarLogoRow}>
             {!sidebarCollapsed && (
               <>
-                <img src="/logo-removebg.png" alt="FCG" className={styles.sidebarLogoImg} />
-                <span className={styles.sidebarLogoText}>FCG</span>
+                <img src="/Logo.png" alt="FCG" className={styles.sidebarLogoImg} />
+                <span className={styles.sidebarLogoText}></span>
               </>
             )}
             <button
