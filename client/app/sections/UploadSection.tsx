@@ -1,5 +1,6 @@
 import styles from "./UploadSection.module.css"
-import FileInput  from "@/components/FileInput"
+import FileInput from "@/components/FileInput"
+
 interface UploadSectionProps {
   onFileSubmit: (file: File) => void
   isOpen: boolean

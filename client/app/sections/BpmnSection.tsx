@@ -1,5 +1,4 @@
 import BpmnViewer from "@/components/BpmnViewer"
-import { DataTable } from "../event-logs/data-table"
 import { ColumnDef } from "@tanstack/react-table"
 import styles from "./BpmnSection.module.css"
 

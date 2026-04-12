@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState, useCallback } from "react"
+import { useRef, useState, useCallback, useEffect } from "react"
 import BpmnViewer from "@/components/BpmnViewer"
 import { DataTable } from "../event-logs/data-table"
 import { ColumnDef } from "@tanstack/react-table"
@@ -24,25 +24,26 @@ export default function OverviewSection<TData, TValue>({
   const [leftPercent, setLeftPercent] = useState(50)
   const containerRef = useRef<HTMLDivElement>(null)
   const dragging = useRef(false)
-
-  const onMouseDown = useCallback(() => {
+  
+  const onPointerDown = useCallback((e: React.PointerEvent) => {
+    e.preventDefault()
+    e.currentTarget.setPointerCapture(e.pointerId) 
     dragging.current = true
     document.body.style.cursor = "col-resize"
-    document.body.style.userSelect = "none"
   }, [])
 
-  const onMouseMove = useCallback((e: React.MouseEvent) => {
+  const onPointerMove = useCallback((e: React.PointerEvent) => {
     if (!dragging.current || !containerRef.current) return
     const rect = containerRef.current.getBoundingClientRect()
     const newLeft = ((e.clientX - rect.left) / rect.width) * 100
     setLeftPercent(Math.min(Math.max(newLeft, 20), 80))
   }, [])
 
-  const onMouseUp = useCallback(() => {
-    dragging.current = false
+  const onPointerUp = useCallback(() => {
+   dragging.current = false
     document.body.style.cursor = ""
-    document.body.style.userSelect = ""
   }, [])
+
 
   return (
     <div className={styles.wrapper}>
@@ -54,15 +55,15 @@ export default function OverviewSection<TData, TValue>({
       <div
         ref={containerRef}
         className={styles.panelGroup}
-        onMouseMove={onMouseMove}
-        onMouseUp={onMouseUp}
-        onMouseLeave={onMouseUp}
       >
         {/* Event log panel */}
-        <div className={styles.panel} style={{ width: `${leftPercent}%` }}>
+        <div
+          className={styles.panel}
+          style={{ width: `${leftPercent}%`, flexShrink: 0 }}
+        >
           <div className={styles.panelHeader} onClick={onSelectEventLog} style={{ cursor: "pointer" }}>
             <span className={styles.panelTitle}>Event log</span>
-            <span className={styles.panelNav}>Open →</span>
+            <span className={styles.panelNav}>Expand ⌞ ⌝</span>
           </div>
           <div className={styles.panelBody}>
             <DataTable columns={columns} data={data} />
@@ -70,15 +71,22 @@ export default function OverviewSection<TData, TValue>({
         </div>
 
         {/* Drag handle */}
-        <div className={styles.resizeHandle} onMouseDown={onMouseDown}>
-          <div className={styles.resizeBar} />
-        </div>
+        
+        <div
+          className={styles.resizeHandle}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+        />
 
         {/* BPMN panel */}
-        <div className={styles.panel} style={{ width: `${100 - leftPercent}%` }}>
+        <div
+          className={styles.panel}
+          style={{ flex: 1, minWidth: 0 }}
+        >
           <div className={styles.panelHeader} onClick={onSelectBpmn} style={{ cursor: "pointer" }}>
             <span className={styles.panelTitle}>BPMN diagram</span>
-            <span className={styles.panelNav}>Open →</span>
+            <span className={styles.panelNav}>Expand ⌞ ⌝</span>
           </div>
           <div className={styles.panelBody}>
             <BpmnViewer xml={xml} />

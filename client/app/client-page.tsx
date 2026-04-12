@@ -9,31 +9,31 @@ import BpmnSection from "./sections/BpmnSection"
 import OverviewSection from "./sections/OverviewSection"
 import styles from "./ClientPage.module.css"
 
-type Section = "upload" | "overview" | "eventlog" | "bpmn"
+type Section = "overview" | "eventlog" | "bpmn" 
 
 export default function ClientPage() {
   const { eventLogData, bpmnXml, processFile } = useProcessFile()
-  const [activeSection, setActiveSection] = useState<Section>("upload")
+  const [activeSection, setActiveSection] = useState<Section>("overview") 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [isUploadOpen, setIsUploadOpen] = useState(false)
+
   const handleFileSubmit = (file: File) => {
     processFile(file)
-    setActiveSection("overview")
+    setIsUploadOpen(false) 
+    setActiveSection("bpmn")
   }
 
   return (
     <div className={styles.pageWrapper}>
       <div className={styles.appBody}>
-        {/*Upload modal*/}
+
         <UploadSection
           onFileSubmit={handleFileSubmit}
           isOpen={isUploadOpen}
           onClose={() => setIsUploadOpen(false)}
         />
-        {/* Sidebar */}
-        <nav className={`${styles.sidebar} ${sidebarCollapsed ? styles.sidebarCollapsed : ""}`}>
 
-          {/* Logo row */}
+        <nav className={`${styles.sidebar} ${sidebarCollapsed ? styles.sidebarCollapsed : ""}`}>
           <div className={styles.sidebarLogoRow}>
             {!sidebarCollapsed && (
               <>
@@ -56,8 +56,9 @@ export default function ClientPage() {
             <div className={styles.sidebarSection}>Workspace</div>
           )}
 
+          {/*Upload opens modal */}
           <button
-            className={`${styles.sidebarItem} ${activeSection === "upload" ? styles.sidebarItemActive : ""}`}
+            className={styles.sidebarItem}
             onClick={() => setIsUploadOpen(true)}
             title="Upload event log"
           >
@@ -78,7 +79,7 @@ export default function ClientPage() {
             </svg>
             {!sidebarCollapsed && <span>Overview</span>}
           </button>
-          
+
           <button
             className={`${styles.sidebarItem} ${activeSection === "eventlog" ? styles.sidebarItemActive : ""}`}
             onClick={() => setActiveSection("eventlog")}
@@ -101,20 +102,9 @@ export default function ClientPage() {
             </svg>
             {!sidebarCollapsed && <span>BPMN diagram</span>}
           </button>
-
         </nav>
 
-        {/* Main content */}
         <main className={styles.main}>
-          <div className={`${styles.page} ${activeSection === "upload" ? styles.pageActive : ""}`}>
-            <OverviewSection
-              columns={columns}
-              data={eventLogData}
-              xml={bpmnXml || ""}
-              onSelectEventLog={() => setActiveSection("eventlog")}
-              onSelectBpmn={() => setActiveSection("bpmn")}
-            />
-          </div>
           <div className={`${styles.page} ${activeSection === "overview" ? styles.pageActive : ""}`}>
             <OverviewSection
               columns={columns}
