@@ -152,3 +152,7 @@
 .djs-element .djs-visual > :first-child {
   transition: all 0.2s ease-in-out;
 }
+html,
+body {
+  height: 100%;
+}

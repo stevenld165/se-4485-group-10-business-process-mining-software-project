@@ -423,6 +423,7 @@ const BpmnViewer = forwardRef(({ xml }: BpmnViewerProps, ref) => {
       const canvas = bpmnModeler.get("canvas") as {
         zoom: (fit: "fit-viewport", padding: number | "auto") => void
       }
+      canvas.zoom("fit-viewport", "auto")
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to load BPMN diagram",
@@ -527,6 +528,30 @@ const BpmnViewer = forwardRef(({ xml }: BpmnViewerProps, ref) => {
         >
           Copy Diagram
         </Button>
+
+        <Button
+          onClick={() => (bpmnModeler?.get("zoomScroll") as any)?.stepZoom(1)}
+          disabled={!bpmnModeler}
+          className='px-4 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200'
+        >
+          +
+        </Button>
+
+        <Button
+          onClick={() => (bpmnModeler?.get("zoomScroll") as any)?.stepZoom(-1)}
+          disabled={!bpmnModeler}
+          className='px-4 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200'
+        >
+          -
+        </Button>
+
+        <Button
+          onClick={() => (bpmnModeler?.get("canvas") as any)?.zoom("fit-viewport", "auto")}
+          disabled={!bpmnModeler}
+          className='px-4 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200'
+        >
+          Fit
+        </Button>
       </div>
 
       {/* Error display */}
@@ -540,7 +565,6 @@ const BpmnViewer = forwardRef(({ xml }: BpmnViewerProps, ref) => {
       <div
         ref={containerRef}
         className='flex-1 min-h-0 w-full bg-gray-50'
-        style={{ height: "600px" }}
       />
     </div>
   )
