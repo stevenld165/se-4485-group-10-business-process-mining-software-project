@@ -1,15 +1,26 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react"
 import Modeler from "bpmn-js/lib/Modeler"
 import "bpmn-js/dist/assets/diagram-js.css"
 import "bpmn-font/dist/css/bpmn-embedded.css"
+import "bpmn-js/dist/assets/bpmn-js.css"
 import { Button } from "./ui/button"
 
 import dagre from "dagre"
 
 interface BpmnViewerProps {
   xml?: string
+}
+
+export interface BpmnViewerHandle {
+  highlightActivity: (activityName: string | null) => void
 }
 
 function injectLanes(
@@ -65,7 +76,7 @@ function injectLanes(
     })
     // Assign control nodes (start/end/gateway) that point to this lane's activities
     const assignedIds = new Set(
-      activities.map((a) => nameToId[a]).filter(Boolean)
+      activities.map((a) => nameToId[a]).filter(Boolean),
     )
 
     Array.from(process.children).forEach((el) => {
@@ -85,8 +96,8 @@ function injectLanes(
       // Check if this control node points to any activity in this lane
       const outgoing = Array.from(process.children).filter(
         (sf) =>
-          sf.localName.toLowerCase().includes("sequenceflow") && 
-          sf.getAttribute("sourceRef") === id
+          sf.localName.toLowerCase().includes("sequenceflow") &&
+          sf.getAttribute("sourceRef") === id,
       )
 
       for (const sf of outgoing) {
@@ -105,7 +116,7 @@ function injectLanes(
         const incoming = Array.from(process.children).filter(
           (sf) =>
             sf.localName === "sequenceFlow" &&
-            sf.getAttribute("targetRef") === id
+            sf.getAttribute("targetRef") === id,
         )
         for (const sf of incoming) {
           const sourceId = sf.getAttribute("sourceRef")
@@ -354,7 +365,7 @@ async function applyDagreLayout(modeler: Modeler): Promise<void> {
   await modeler.importXML(updatedXml)
 }
 
-export default function BpmnViewer({ xml }: BpmnViewerProps) {
+const BpmnViewer = forwardRef(({ xml }: BpmnViewerProps, ref) => {
   const containerRef = useRef<HTMLDivElement>(null)
   const [bpmnModeler, setBpmnModeler] = useState<Modeler | null>(null)
   const [loading, setLoading] = useState<boolean>(false)
@@ -429,6 +440,42 @@ export default function BpmnViewer({ xml }: BpmnViewerProps) {
       loadBpmnDiagram()
     }
   }, [bpmnModeler, xml])
+
+  useImperativeHandle(ref, () => ({
+    highlightActivity: (activityName: string | null) => {
+      if (!bpmnModeler) return
+
+      console.log("attempting to highlight: ", activityName)
+
+      const elementRegistry = bpmnModeler.get<any>("elementRegistry")
+      const canvas = bpmnModeler.get<any>("canvas")
+
+      // Clear all previous highlights
+      elementRegistry.getAll().forEach((el: any) => {
+        if (el.type !== "bpmn:SequenceFlow") {
+          canvas.removeMarker(el.id, "highlighted-node")
+        }
+      })
+
+      if (!activityName) return
+
+      // Find element(s) whose name matches the activity
+      const matches = elementRegistry
+        .getAll()
+        .filter(
+          (el: any) =>
+            el.businessObject?.name === activityName &&
+            el.type !== "bpmn:SequenceFlow",
+        )
+
+      matches.forEach((el: any) => {
+        console.log(el)
+        canvas.addMarker(el.id, "highlighted-node")
+        // Scroll the element into view
+        canvas.scrollToElement(el)
+      })
+    },
+  }))
 
   return (
     <div className='w-full h-full flex flex-col'>
@@ -521,4 +568,7 @@ export default function BpmnViewer({ xml }: BpmnViewerProps) {
       />
     </div>
   )
-}
+})
+
+BpmnViewer.displayName = "BpmnViewer"
+export default BpmnViewer
