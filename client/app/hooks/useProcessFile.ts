@@ -7,8 +7,8 @@ export const useProcessFile = () => {
   const [eventLogData, setEventLogData] = useState<Entry[]>([])
   const [bpmnXml, setBpmnXml] = useState<string>()
 
-  const processFile = async (file: File) => {
-    if (!file || file.type != "text/csv") return
+  const processFile = async (file: File): Promise<{ entries: Entry[]; xml: string } | null> => {
+    if (!file || file.type != "text/csv") return null
 
     const formData = new FormData()
     formData.append("file", file)
@@ -28,14 +28,22 @@ export const useProcessFile = () => {
 
       setEventLogData(eventLogJson)
       setBpmnXml(bpmnDiagramXml)
+      return { entries: eventLogJson, xml: bpmnDiagramXml }
     } catch (error) {
       console.error(error)
+      return null
     }
+  }
+
+  const loadFromRecord = (data: { entries: Entry[]; xml: string }) => {
+    setEventLogData(data.entries)
+    setBpmnXml(data.xml)
   }
 
   return {
     eventLogData,
     bpmnXml,
     processFile,
+    loadFromRecord,
   }
 }

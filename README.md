@@ -2,9 +2,10 @@
 
 ## How to run for development
 
-The app is composed of two parts:
+The app is composed of three parts:
 - FastAPI Python Backend for performing process mining
 - Next.js Frontend
+- .exe server
 
 ### FastAPI Python Backend
 1. Make sure you have Python installed, my computer is 3.17.7, but I think any newish version will probably be fine

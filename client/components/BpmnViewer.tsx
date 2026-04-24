@@ -364,12 +364,41 @@ async function applyDagreLayout(modeler: Modeler): Promise<void> {
   const { xml: updatedXml } = await (modeler as any).saveXML({ format: false })
   await modeler.importXML(updatedXml)
 }
-
+// ── Icon helpers (keeps JSX clean) ────────────────────────────────────────────
+function UndoIcon() {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" width="14" height="14">
+      <path d="M3 7H11a3 3 0 0 1 0 6H8" />
+      <path d="M6 4L3 7l3 3" />
+    </svg>
+  )
+}
+ 
+function RedoIcon() {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" width="14" height="14">
+      <path d="M13 7H5a3 3 0 0 0 0 6h3" />
+      <path d="M10 4l3 3-3 3" />
+    </svg>
+  )
+}
+ 
+function SaveIcon() {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" width="14" height="14">
+      <path d="M3 3h8l2 2v8a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V3z" />
+      <path d="M6 3v4h5V3M6 10h4" />
+    </svg>
+  )
+}
+// -------------------------------------------------------------------
 const BpmnViewer = forwardRef(({ xml }: BpmnViewerProps, ref) => {
   const containerRef = useRef<HTMLDivElement>(null)
   const [bpmnModeler, setBpmnModeler] = useState<Modeler | null>(null)
   const [loading, setLoading] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
+  const [canUndo, setCanUndo] = useState(false)
+  const [canRedo, setCanRedo] = useState(false)
 
   // Initialize bpmn-js Modeler
   useEffect(() => {
@@ -382,8 +411,18 @@ const BpmnViewer = forwardRef(({ xml }: BpmnViewerProps, ref) => {
 
     setBpmnModeler(modeler)
 
+    //Subscribe to command stack changes for undo/redo state
+    const updateUndoRedo = () => {
+      const commandStack = modeler.get<any>("commandStack")
+      setCanUndo(commandStack.canUndo())
+      setCanRedo(commandStack.canRedo())
+    }
+
+    modeler.on("commandStack.changed", updateUndoRedo)
+
     // Cleanup function
     return () => {
+      modeler.off("commandStack.changed", updateUndoRedo)
       modeler.destroy()
     }
   }, [])
@@ -441,6 +480,19 @@ const BpmnViewer = forwardRef(({ xml }: BpmnViewerProps, ref) => {
     }
   }, [bpmnModeler, xml])
 
+  // Undo/Redo via bpmn-js modeling API
+  const handleUndo = () => {
+    if (!bpmnModeler) return
+    const commandStack = bpmnModeler.get<any>("commandStack")
+    if (commandStack.canUndo()) commandStack.undo()
+  }
+ 
+  const handleRedo = () => {
+    if (!bpmnModeler) return
+    const commandStack = bpmnModeler.get<any>("commandStack")
+    if (commandStack.canRedo()) commandStack.redo()
+  }
+
   useImperativeHandle(ref, () => ({
     highlightActivity: (activityName: string | null) => {
       if (!bpmnModeler) return
@@ -477,6 +529,8 @@ const BpmnViewer = forwardRef(({ xml }: BpmnViewerProps, ref) => {
     },
   }))
 
+  //Toolbar separator helper
+   const Sep = () => <div style={{ width: 1, height: 20, background: "#e5e7eb", margin: "0 4px" }} />
   return (
     <div className='w-full h-full flex flex-col'>
       {/* Controls */}
@@ -528,7 +582,7 @@ const BpmnViewer = forwardRef(({ xml }: BpmnViewerProps, ref) => {
         >
           Copy Diagram
         </Button>
-
+        {/* Zoom controls */}
         <Button
           onClick={() => (bpmnModeler?.get("zoomScroll") as any)?.stepZoom(1)}
           disabled={!bpmnModeler}
@@ -544,13 +598,34 @@ const BpmnViewer = forwardRef(({ xml }: BpmnViewerProps, ref) => {
         >
           -
         </Button>
-
+        {/* Fit button */}
         <Button
           onClick={() => (bpmnModeler?.get("canvas") as any)?.zoom("fit-viewport", "auto")}
           disabled={!bpmnModeler}
           className='px-4 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200'
         >
           Fit
+        </Button>
+
+        {/*Undo button */}
+        <Button
+          onClick={handleUndo}
+          disabled={!canUndo}
+          title="Undo (Ctrl+Z)"
+          className="flex items-center gap-1.5 px-3 py-2 bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100 disabled:opacity-40"
+        >
+          <UndoIcon />
+          <span className="text-xs">Undo</span>
+        </Button>
+        {/*Redo Button */}
+        <Button
+          onClick={handleRedo}
+          disabled={!canRedo}
+          title="Redo (Ctrl+Shift+Z)"
+          className="flex items-center gap-1.5 px-3 py-2 bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100 disabled:opacity-40"
+        >
+          <RedoIcon />
+          <span className="text-xs">Redo</span>
         </Button>
       </div>
 
