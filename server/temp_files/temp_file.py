@@ -14,6 +14,7 @@ from ArtifactSaving import InstanceSaver
 from EventLogLogic import EventLogFactory, OCEventLog, CCEventLog
 from FormatConversion import MetadataFormatter
 from MetaDataAnnotation import MetaDataAggregator
+from server.temp_files.DiagramLogic import DiagramFactory
 from server.temp_files.DiscoveryLogic import DiscoveryFactory
 from server.temp_files.ElogFlatteners import OCELFlattener
 
@@ -74,21 +75,20 @@ class GraphConstructor:
 
       event_log_meta = MetaDataAggregator.formulate(
         object_id = None,
-        object_type = type_of_elog,
+        object_type = event_log.file_format,
         file_format = "parquet",
         source_filename = file.filename,
       )
 
       el_id = saver.save_elog(
         event_log,
-        formatted_input,
+        event_log.file_contents,
         event_log_meta,
       )
 
-      elog_to_df = ConverterFactory.create_df_converter('pqt')
-      saved_contents = elog_to_df.convert_from(event_log.read_event_log())
+      saved_contents = event_log.read_event_log()
       if isinstance(event_log, OCEventLog):
-        sub_eLog, sub_content = OCELFlattener().simplify_eLog(event_log, file_type.strip('.'))
+        sub_elog, sub_content = OCELFlattener().simplify_eLog(event_log, event_log.file_format)
         sub_event_log_meta = MetaDataAggregator.formulate(
           object_id=None,
           object_type='CCEL',
@@ -96,14 +96,28 @@ class GraphConstructor:
           source_filename=f"sub_log_{el_id}",
         )
         el_sub_id = saver.save_elog(
-          sub_eLog,
+          sub_elog,
           sub_content,
           sub_event_log_meta
         )
-        saved_contents = elog_to_df.convert_from(sub_eLog.read_event_log())
+        saved_contents = sub_elog.read_event_log()
 
       discoverer = DiscoveryFactory.create('CCEL')
-      discoverer.discover_process()
+      new_BPMN = discoverer.discover_process(saved_contents)
+
+      new_swimlane = DiagramFactory.create_diagram('Swimlane', "bpmn", new_BPMN, )
+
+      diagram_meta = MetaDataAggregator.formulate(
+        object_id = None,
+        object_type = 'Swimlane',
+        file_format = new_swimlane.file_format,
+        source_filename=f"swimlane_{el_id}"
+      )
+      sl_id = saver.save_graph(
+        new_swimlane,
+        new_swimlane.file_contents,
+        diagram_meta
+      )
 
 
 

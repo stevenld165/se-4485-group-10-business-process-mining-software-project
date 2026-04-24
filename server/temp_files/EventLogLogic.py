@@ -2,8 +2,10 @@ import pandas as pd
 from abc import abstractmethod, ABCMeta
 from Writers import WriterFactory, FileWriter
 from pathlib import Path
+from typing import Union
 
 from Readers import ReaderFactory
+from FormatConversion import ConverterFactory
 
 
 class EventLog(metaclass=ABCMeta):
@@ -16,6 +18,7 @@ class EventLog(metaclass=ABCMeta):
   def write_event_log(self, file_location: Path, file_contents: pd.DataFrame, object_id: str, file_format: str) -> None:
     pass
 
+
 class OCEventLog(EventLog):
   allowed_structures_ocel = ['event_id', 'object_id', 'object_type', 'activity', 'timestamp', 'actor']
 
@@ -24,17 +27,33 @@ class OCEventLog(EventLog):
     self.file_location = location
     self.file_format = file_format
     self.file_writer = WriterFactory.create_writer('ELog')
-    self.file_reader = ReaderFactory.create_reader(f'{file_format}')
+    self.file_reader = ReaderFactory.create_reader('ELog')
     pass
 
-  def read_event_log(self) -> bytes:
-    return self.file_reader.read_file(self.file_location)
+  def read_event_log(self) -> pd.DataFrame:
+    to_df = ConverterFactory.create_df_converter(self.file_format)
+    return to_df.convert_from(
+      self.file_reader.read_file(self.file_location)
+    )
 
 
   def write_event_log(self, file_location: Path, file_contents: pd.DataFrame, object_id: str, file_format: str) -> None:
     self.file_writer.write_to_file(file_location, file_contents, object_id, file_format)
+    self.file_contents = file_contents
     self.file_location = file_location
-    pass
+
+  @property
+  def file_format(self):
+    return self.file_format
+
+  @property
+  def file_contents(self):
+    return self.file_contents
+
+  @file_contents.setter
+  def file_contents(self, df: pd.DataFrame):
+    self.file_contents = df
+
 
 class CCEventLog(EventLog):
   allowed_structures_ccel = ['case_id', 'activity', 'timestamp', 'actor']
@@ -47,17 +66,34 @@ class CCEventLog(EventLog):
     self.file_reader = ReaderFactory.create_reader(f'{file_format}')
     pass
 
-  def read_event_log(self) -> bytes:
-    return self.file_reader.read_file(self.file_location)
+  def read_event_log(self) -> pd.DataFrame:
+    to_df = ConverterFactory.create_df_converter(self.file_format)
+    return to_df.convert_from(
+      self.file_reader.read_file(self.file_location)
+    )
 
   def write_event_log(self, file_location: Path, file_contents: pd.DataFrame, object_id: str, file_format: str) -> None:
     self.file_writer.write_to_file(file_location, file_contents, object_id, file_format)
+    self.file_contents = file_contents
     self.file_location = file_location
     return
 
+  @property
+  def file_format(self):
+    return self.file_format
+
+  @property
+  def file_contents(self):
+    return self.file_contents
+
+  @file_contents.setter
+  def file_contents(self, df: pd.DataFrame):
+    self.file_contents = df
+
+
 class EventLogFactory:
   @staticmethod
-  def create_elog(elog_type: str, file_type: str, file_contents: pd.DataFrame) -> EventLog:
+  def create_elog(elog_type: str, file_type: str, file_contents: pd.DataFrame) -> Union[CCEventLog, OCEventLog]:
     if elog_type == 'OCEL':
       return OCEventLog(contents = file_contents, file_format = file_type)
     if elog_type == 'CCEL':

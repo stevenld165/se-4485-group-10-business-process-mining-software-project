@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
 import json
+import xml.etree.ElementTree as ET
+from pathlib import Path
 
 from pandas import DataFrame
 
@@ -24,6 +26,12 @@ class WriteAsTxt(FileWriter):
     path = f_loc / f"{object_id}.{f_fmt}"
     path.write_text(f_cont, encoding="utf-8")
 
+class WriteAsBPMN(FileWriter):
+  def write_to_file(self, f_loc: Path, f_cont: ET.ElementTree, object_id: str, f_fmt: str) -> None:
+    path = f_loc / f"{object_id}.{f_fmt}"
+    f_cont.write(path, encoding="utf-8", xml_declaration=True)
+
+
 class WriterFactory:
   @staticmethod
   def create_writer(file_type: str) -> FileWriter:
@@ -33,3 +41,5 @@ class WriterFactory:
         return WriteAsJson()
       elif file_type == 'Notes':
         return WriteAsTxt()
+      elif file_type == 'Diagram':
+        return WriteAsBPMN()

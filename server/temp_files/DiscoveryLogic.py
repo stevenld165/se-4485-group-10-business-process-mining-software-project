@@ -34,4 +34,4 @@ class DiscoveryFactory:
     # if isinstance(log, OCEventLog):
     #   return OCELDiscovery()
     # elif isinstance(log, CCEventLog):
-      return CCELDiscovery()
+    return CCELDiscovery()

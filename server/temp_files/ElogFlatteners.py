@@ -13,7 +13,7 @@ from FormatConversion import ConverterFactory
 class ElogFlattener(ABC):
   @abstractmethod
   @staticmethod
-  def simplify_eLog(elog: EventLog) -> EventLog:
+  def simplify_eLog(elog: EventLog, file_type: str) -> EventLog:
     pass
 
 class OCELFlattener(ElogFlattener):
@@ -22,7 +22,7 @@ class OCELFlattener(ElogFlattener):
 
 
   def simplify_eLog(self, elog: OCEventLog, file_type: str): # -> EventLog:
-    elog_contents = self.elog_to_df.convert_from(elog.read_event_log())
+    elog_contents = elog.read_event_log()
     object_types = self._infer_object_types(elog_contents)
     oc_event_log = pm4py.convert_log_to_ocel(
       elog_contents,
