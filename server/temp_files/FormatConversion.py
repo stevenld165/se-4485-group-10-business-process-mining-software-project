@@ -10,7 +10,7 @@ class FormatGeneralizer(ABC):
 
 class MetadataFormatter(ABC):
   @abstractmethod
-  def convert_to_json(self, raw: bytes) -> dict:
+  def convert_to(self, raw: bytes) -> dict:
     pass
 
 class FromJSONToDFConverter(FormatGeneralizer):
@@ -30,7 +30,7 @@ class FromParaquetToDFConverter(FormatGeneralizer):
     return pd.read_parquet(io.BytesIO(raw))
 
 class TextToJsonConverter(MetadataFormatter):
-  def convert_to_json(self, raw: bytes) -> dict:
+  def convert_to(self, raw: bytes) -> dict:
     return json.loads(raw)
 
 class ConverterFactory:

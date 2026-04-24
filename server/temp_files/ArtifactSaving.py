@@ -41,7 +41,7 @@ class InstanceSaver(Saver):
     )
 
   def _load_metadata(self) -> dict:
-    return self.json_transformer.convert_to_json(self.metadata_reader.read_file(self.storage_path.METADATA_FILE))
+    return self.json_transformer.convert_to(self.metadata_reader.read_file(self.storage_path.METADATA_FILE))
 
   def save_elog(self, elog: EventLog, contents: pd.DataFrame, meta: dict) -> str:
     object_id = str(uuid.uuid4())

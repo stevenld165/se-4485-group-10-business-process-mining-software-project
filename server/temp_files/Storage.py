@@ -32,6 +32,7 @@ class FileStorage:
     elif isinstance(artifact, SwimlaneDiagram):
       return self.BPMN_DIR
 
+
   def get_subdir(self, subdir: str = "") -> Path:
     if subdir:
       path = self.STORE_DIR / subdir
