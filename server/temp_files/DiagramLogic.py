@@ -23,8 +23,8 @@ class SwimlaneDiagram(BPMNGraph):
     self.file_contents = contents
     self.file_location = location
     self.file_type = file_type
-    self.file_writer = WriterFactory.create_writer('Diagram')
-    self.file_reader = ReaderFactory.create_reader('Diagram')
+    self.file_writer = WriterFactory.create_writer('bpmn')
+    self.file_reader = ReaderFactory.create_reader('bpmn')
 
   def read_graph(self) -> bytes:
     return self.file_reader.read_file(self.file_location)

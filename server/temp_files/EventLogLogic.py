@@ -26,16 +26,15 @@ class OCEventLog(EventLog):
     self.file_contents = contents
     self.file_location = location
     self.file_format = file_format
-    self.file_writer = WriterFactory.create_writer('ELog')
-    self.file_reader = ReaderFactory.create_reader('ELog')
+    self.file_writer = WriterFactory.create_writer(f'{file_format}')
+    self.file_reader = ReaderFactory.create_reader(f'{file_format}')
+    self.to_df = ConverterFactory.create_df_converter(self.file_format)
     pass
 
   def read_event_log(self) -> pd.DataFrame:
-    to_df = ConverterFactory.create_df_converter(self.file_format)
-    return to_df.convert_from(
+    return self.to_df.convert_from(
       self.file_reader.read_file(self.file_location)
     )
-
 
   def write_event_log(self, file_location: Path, file_contents: pd.DataFrame, object_id: str, file_format: str) -> None:
     self.file_writer.write_to_file(file_location, file_contents, object_id, file_format)
@@ -62,13 +61,13 @@ class CCEventLog(EventLog):
     self.file_contents = contents
     self.file_location = location
     self.file_format = file_format
-    self.file_writer = WriterFactory.create_writer('ELog')
-    self.file_reader = ReaderFactory.create_reader(f'{file_format}')
+    self.file_writer = WriterFactory.create_writer(self.file_format)
+    self.file_reader = ReaderFactory.create_reader(self.file_format)
+    self.to_df = ConverterFactory.create_df_converter(self.file_format)
     pass
 
   def read_event_log(self) -> pd.DataFrame:
-    to_df = ConverterFactory.create_df_converter(self.file_format)
-    return to_df.convert_from(
+    return self.to_df.convert_from(
       self.file_reader.read_file(self.file_location)
     )
 
@@ -81,6 +80,10 @@ class CCEventLog(EventLog):
   @property
   def file_format(self):
     return self.file_format
+
+  @file_format.setter
+  def file_format(self, value):
+    self.file_format = value
 
   @property
   def file_contents(self):

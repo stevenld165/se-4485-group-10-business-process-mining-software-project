@@ -35,11 +35,11 @@ class WriteAsBPMN(FileWriter):
 class WriterFactory:
   @staticmethod
   def create_writer(file_type: str) -> FileWriter:
-      if file_type == 'ELog':
+      if file_type == 'parquet':
         return WriteAsParaquet()
-      elif file_type == 'MetaData' or file_type == 'Bundle':
+      elif file_type == 'json':
         return WriteAsJson()
-      elif file_type == 'Notes':
+      elif file_type == 'txt':
         return WriteAsTxt()
-      elif file_type == 'Diagram':
+      elif file_type == 'bpmn':
         return WriteAsBPMN()

@@ -8,15 +8,11 @@ class Reader(ABC):
   def read_file(self, f_loc: Path) -> bytes:
     pass
 
-class JsonReader(Reader):
+class ByteReader(Reader):
   def read_file(self, f_loc: Path) -> bytes:
     return f_loc.read_bytes()
 
-class ParaquetReader(Reader):
-  def read_file(self, f_loc: Path) -> bytes:
-    return f_loc.read_bytes()
-
-class BPMNReader(Reader):
+class XMLReader(Reader):
   def read_file(self, f_loc: Path):
     tree = ET.parse(f_loc)
     root = tree.getroot()
@@ -25,9 +21,9 @@ class BPMNReader(Reader):
 class ReaderFactory():
   @staticmethod
   def create_reader(source_type: str) -> Reader:
-    if source_type == 'MetaData' or source_type == 'Bundle':
-      return JsonReader()
-    elif source_type == 'Elog':
-      return ParaquetReader()
-    elif source_type == 'Diagram':
-      return BPMNReader()
+    if (source_type == 'pqt'
+        or source_type == 'txt'
+        or source_type == 'json'):
+      return ByteReader()
+    elif source_type == 'bpmn':
+      return XMLReader()

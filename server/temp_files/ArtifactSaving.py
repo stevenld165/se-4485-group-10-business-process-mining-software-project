@@ -25,10 +25,10 @@ class InstanceSaver(Saver):
 
 
   def _object_factory(self):
-    self.metadata_writer = WriterFactory.create_writer('MetaData')
-    self.metadata_reader = ReaderFactory.create_reader('MetaData')
+    self.metadata_writer = WriterFactory.create_writer('json')
+    self.metadata_reader = ReaderFactory.create_reader('json')
     self.json_transformer = ConverterFactory.create_json_converter('txt')
-    self.note_writer = WriterFactory.create_writer('Notes')
+    self.note_writer = WriterFactory.create_writer('txt')
 
   def _save_meta_data(self, object_id: str, meta: dict) -> None:
     metadata_dict = self._load_metadata()
@@ -46,7 +46,10 @@ class InstanceSaver(Saver):
   def save_elog(self, elog: EventLog, contents: pd.DataFrame, meta: dict) -> str:
     object_id = str(uuid.uuid4())
     meta["id"] = object_id
+
     path_name = self.storage_path.determine_directory(elog)
+    meta["storage_subdir"] = str(path_name.relative_to(self.storage_path.STORE_DIR))
+
     elog.write_event_log(
       path_name,
       contents,
@@ -59,7 +62,10 @@ class InstanceSaver(Saver):
   def save_graph(self, diagram: BPMNGraph, contents, meta: dict) -> str:
     object_id = str(uuid.uuid4())
     meta["id"] = object_id
+
     path_name = self.storage_path.determine_directory(diagram)
+    meta["storage_subdir"] = str(path_name.relative_to(self.storage_path.STORE_DIR))
+
     diagram.write_graph(
       path_name,
       contents,
