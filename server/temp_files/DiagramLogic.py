@@ -5,6 +5,7 @@ from pm4py import BPMN
 
 from Writers import WriterFactory
 from Readers import ReaderFactory
+from server.temp_files.FormatConversion import ConverterFactory
 
 
 class BPMNGraph(ABC):
@@ -25,9 +26,12 @@ class SwimlaneDiagram(BPMNGraph):
     self.file_type = file_type
     self.file_writer = WriterFactory.create_writer('bpmn')
     self.file_reader = ReaderFactory.create_reader('bpmn')
+    self.byte_converter = ConverterFactory.create_byte_converter('bpmn')
 
   def read_graph(self) -> bytes:
-    return self.file_reader.read_file(self.file_location)
+    return self.byte_converter.convert_to(
+      self.file_reader.read_file(self.file_location)
+    )
 
   def write_graph(self, file_location: Path, file_contents: str, object_id: str, file_type: str = 'bpmn') -> None:
     self.file_writer.write_to_file(file_location, file_contents, object_id, file_type)

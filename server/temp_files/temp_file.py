@@ -14,6 +14,8 @@ from ArtifactSaving import InstanceSaver
 from EventLogLogic import EventLogFactory, OCEventLog, CCEventLog
 from FormatConversion import MetadataFormatter
 from MetaDataAnnotation import MetaDataAggregator
+from server.temp_files.ArtifactBundler import ArtifactBundler
+from server.temp_files.ArtifactUnbundler import BundleUnpacker
 from server.temp_files.DiagramLogic import DiagramFactory
 from server.temp_files.DiscoveryLogic import DiscoveryFactory
 from server.temp_files.ElogFlatteners import OCELFlattener
@@ -72,6 +74,7 @@ class GraphConstructor:
       )
 
       saver = InstanceSaver()
+      object_ids = list()
 
       event_log_meta = MetaDataAggregator.formulate(
         object_id = None,
@@ -80,10 +83,12 @@ class GraphConstructor:
         source_filename = file.filename,
       )
 
-      el_id = saver.save_elog(
-        event_log,
-        event_log.file_contents,
-        event_log_meta,
+      object_ids.append(
+        saver.save_elog(
+          event_log,
+          event_log.file_contents,
+          event_log_meta,
+        )
       )
 
       saved_contents = event_log.read_event_log()
@@ -93,12 +98,14 @@ class GraphConstructor:
           object_id=None,
           object_type='CCEL',
           file_format="parquet",
-          source_filename=f"sub_log_{el_id}",
+          source_filename=f"sub_log_{object_ids[0]}",
         )
-        el_sub_id = saver.save_elog(
-          sub_elog,
-          sub_content,
-          sub_event_log_meta
+        object_ids.append(
+          saver.save_elog(
+            sub_elog,
+            sub_content,
+            sub_event_log_meta
+          )
         )
         saved_contents = sub_elog.read_event_log()
 
@@ -111,18 +118,24 @@ class GraphConstructor:
         object_id = None,
         object_type = 'Swimlane',
         file_format = new_swimlane.file_format,
-        source_filename=f"swimlane_{el_id}"
+        source_filename=f"swimlane_{object_ids[0]}"
       )
-      sl_id = saver.save_graph(
-        new_swimlane,
-        new_swimlane.file_contents,
-        diagram_meta
+      object_ids.append(
+        saver.save_graph(
+          new_swimlane,
+          new_swimlane.file_contents,
+          diagram_meta
+        )
       )
 
+      log_and_graph_bundler = ArtifactBundler()
+      bundle_id = log_and_graph_bundler.bundle_artifacts(
+        *object_ids,
+        self.get_file_name(file.filename)
+      )
 
+      log_and_graph_unpacked = BundleUnpacker(bundle_id)
 
-    # ^^^ create the appropriate event logs ^^^, write to system, read event log,
-    # discovery alg, write graph, read graph, send response with graph
 
     return
 
