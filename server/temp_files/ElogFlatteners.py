@@ -75,9 +75,9 @@ class OCELFlattener(ElogFlattener):
 
   def _infer_object_types(self, df: pd.DataFrame) -> list:
     object_types = []
-    for col in df.columns:
-      if col.lower().endswith("_id") and col not in ["object_id"]:
-        obj_type = re.sub("_id$", "", col.lower())
-        object_types.append((obj_type, col))
+    if 'object_type' in df.columns:
+      unique_types = df['object_type'].unique()
+      for obj_type in unique_types:
+        object_types.append((obj_type, 'object_type'))
     return object_types
 

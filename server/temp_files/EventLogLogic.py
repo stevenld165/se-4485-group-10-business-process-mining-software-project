@@ -53,6 +53,10 @@ class OCEventLog(EventLog):
   def file_contents(self, df: pd.DataFrame):
     self.file_contents = df
 
+  @file_format.setter
+  def file_format(self, value):
+    self._file_format = value
+
 
 class CCEventLog(EventLog):
   allowed_structures_ccel = ['case_id', 'activity', 'timestamp', 'actor']
