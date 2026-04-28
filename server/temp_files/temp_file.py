@@ -34,6 +34,23 @@ class GraphConstructor:
   #     self.construct_graph_from_log,
   #     methods=["POST"]
   #   )
+  #   self._object_factory()
+
+  def _object_factory(self):
+    self.input_validator = Validator.create_format_validator(
+      "EventLog",
+      self.allowed_extensions_event_log
+    )
+    self.ocel_structure_validator = Validator.create_structure_validator(
+      "OCEL",
+      OCEventLog.allowed_structures_ocel
+    )
+    self.ccel_structure_validator = Validator.create_structure_validator(
+      "CCEL",
+      CCEventLog.allowed_structures_ccel
+    )
+    self.saver = InstanceSaver()
+    self.log_and_graph_bundler = ArtifactBundler()
 
   def _get_file_extension(self, filename: str) -> str:
     return os.path.splitext(filename)[-1].lower()
@@ -42,16 +59,14 @@ class GraphConstructor:
     return filename.rstrip(self.get_file_extension(filename)).rstrip('.')
 
   def _validate_event_log_structure(self, user_input: pd.DataFrame) -> str:
-    ocel_structure_validator = Validator.create_structure_validator("OCEL", OCEventLog.allowed_structures_ocel)
-    ccel_structure_validator = Validator.create_structure_validator("CCEL", CCEventLog.allowed_structures_ccel)
-    if ocel_structure_validator.validate_structure(user_input.columns.tolist()):
+    if self.ocel_structure_validator.validate_structure(user_input.columns.tolist()):
       return "ocel"
-    elif ccel_structure_validator.validate_structure(user_input.columns.tolist()):
+    elif self.ccel_structure_validator.validate_structure(user_input.columns.tolist()):
       return "ccel"
     else:
       return "error"
 
-  def _format_for_inductive_mining(self, elog: EventLog, object_ids: list, saver: InstanceSaver) -> pd.DataFrame:
+  def _format_for_inductive_mining(self, elog: EventLog, object_ids: list) -> pd.DataFrame:
     if isinstance(elog, OCEventLog):
       sub_elog, sub_content = OCELFlattener().simplify_eLog(elog, elog.file_format)
       sub_event_log_meta = MetaDataAggregator.formulate(
@@ -61,7 +76,7 @@ class GraphConstructor:
         source_filename=f"sub_log_{object_ids[0]}",
       )
       object_ids.append(
-        saver.save_elog(
+        self.saver.save_elog(
           sub_elog,
           sub_content,
           sub_event_log_meta
@@ -74,11 +89,8 @@ class GraphConstructor:
   async def construct_graph_from_log(self, file: UploadFile = File(...)):
     content = await file.read()
     file_type = self._get_file_extension(file.filename)
-    input_validator = Validator.create_format_validator(
-      "EventLog",
-      self.allowed_extensions_event_log)
 
-    if input_validator.validate_file_type(self._get_file_extension(file.filename)):
+    if self.input_validator.validate_file_type(self._get_file_extension(file.filename)):
 
       file_converter = ConverterFactory.create_df_converter(file_type)
       formatted_input = file_converter.convert_from(content)
@@ -90,7 +102,6 @@ class GraphConstructor:
         file_type = file_type.strip('.')
       )
 
-      saver = InstanceSaver()
       object_ids = list()
 
       event_log_meta = MetaDataAggregator.formulate(
@@ -101,14 +112,14 @@ class GraphConstructor:
       )
 
       object_ids.append(
-        saver.save_elog(
+        self.saver.save_elog(
           event_log,
           event_log.file_contents,
           event_log_meta,
         )
       )
 
-      saved_contents = self._format_for_inductive_mining(event_log, object_ids, saver)
+      saved_contents = self._format_for_inductive_mining(event_log, object_ids)
       discoverer = DiscoveryFactory.create('CCEL')
       new_BPMN = discoverer.discover_process(saved_contents)
 
@@ -121,15 +132,14 @@ class GraphConstructor:
         source_filename=f"swimlane_{object_ids[0]}"
       )
       object_ids.append(
-        saver.save_graph(
+        self.saver.save_graph(
           new_swimlane,
           new_swimlane.file_contents,
           diagram_meta
         )
       )
 
-      log_and_graph_bundler = ArtifactBundler()
-      bundle_id = log_and_graph_bundler.bundle_artifacts(
+      bundle_id = self.log_and_graph_bundler.bundle_artifacts(
         *object_ids,
         label = self._get_file_name(file.filename)
       )
