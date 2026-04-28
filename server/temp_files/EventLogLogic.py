@@ -11,7 +11,7 @@ from FormatConversion import ConverterFactory
 class EventLog(metaclass=ABCMeta):
 
   @abstractmethod
-  def read_event_log(self) -> bytes:
+  def read_event_log(self) -> pd.DataFrame:
     pass
 
   @abstractmethod

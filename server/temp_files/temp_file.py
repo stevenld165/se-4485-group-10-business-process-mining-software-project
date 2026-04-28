@@ -11,7 +11,7 @@ from FormatConversion import ConverterFactory
 import os
 
 from ArtifactSaving import InstanceSaver
-from EventLogLogic import EventLogFactory, OCEventLog, CCEventLog
+from EventLogLogic import EventLogFactory, OCEventLog, CCEventLog, EventLog
 from FormatConversion import MetadataFormatter
 from MetaDataAnnotation import MetaDataAggregator
 from server.temp_files.ArtifactBundler import ArtifactBundler
@@ -26,8 +26,6 @@ from server.temp_files.ElogFlatteners import OCELFlattener
 class GraphConstructor:
   allowed_extensions_event_log = ['csv', 'json', 'xml']
   allowed_extensions_graph = ['bpmn']
-  allowed_structures_ocel = ['event_id', 'object_id', 'object_type', 'activity', 'timestamp', 'actor']
-  allowed_structures_ccel = ['case_id', 'activity', 'timestamp', 'actor']
 
   # def __init__(self, app: FastAPI):
   #   self.app = app
@@ -37,13 +35,13 @@ class GraphConstructor:
   #     methods=["POST"]
   #   )
 
-  def get_file_extension(self, filename: str) -> str:
+  def _get_file_extension(self, filename: str) -> str:
     return os.path.splitext(filename)[-1].lower()
 
-  def get_file_name(self, filename: str) -> str:
+  def _get_file_name(self, filename: str) -> str:
     return filename.rstrip(self.get_file_extension(filename)).rstrip('.')
 
-  def validate_event_log_structure(self, user_input: pd.DataFrame) -> str:
+  def _validate_event_log_structure(self, user_input: pd.DataFrame) -> str:
     ocel_structure_validator = Validator.create_structure_validator("OCEL", OCEventLog.allowed_structures_ocel)
     ccel_structure_validator = Validator.create_structure_validator("CCEL", CCEventLog.allowed_structures_ccel)
     if ocel_structure_validator.validate_structure(user_input.columns.tolist()):
@@ -53,18 +51,38 @@ class GraphConstructor:
     else:
       return "error"
 
+  def _format_for_inductive_mining(self, elog: EventLog, object_ids: list, saver: InstanceSaver) -> pd.DataFrame:
+    if isinstance(elog, OCEventLog):
+      sub_elog, sub_content = OCELFlattener().simplify_eLog(elog, elog.file_format)
+      sub_event_log_meta = MetaDataAggregator.formulate(
+        object_id=None,
+        object_type='CCEL',
+        file_format="parquet",
+        source_filename=f"sub_log_{object_ids[0]}",
+      )
+      object_ids.append(
+        saver.save_elog(
+          sub_elog,
+          sub_content,
+          sub_event_log_meta
+        )
+      )
+      return sub_elog.read_event_log()
+    elif isinstance(elog, CCEventLog):
+      return elog.read_event_log()
+
   async def construct_graph_from_log(self, file: UploadFile = File(...)):
     content = await file.read()
-    file_type = self.get_file_extension(file.filename)
+    file_type = self._get_file_extension(file.filename)
     input_validator = Validator.create_format_validator(
       "EventLog",
       self.allowed_extensions_event_log)
 
-    if input_validator.validate_file_type(self.get_file_extension(file.filename)):
+    if input_validator.validate_file_type(self._get_file_extension(file.filename)):
 
       file_converter = ConverterFactory.create_df_converter(file_type)
       formatted_input = file_converter.convert_from(content)
-      type_of_elog = self.validate_event_log_structure(formatted_input)
+      type_of_elog = self._validate_event_log_structure(formatted_input)
 
       event_log = EventLogFactory.create_elog(
         type_of_elog,
@@ -90,24 +108,7 @@ class GraphConstructor:
         )
       )
 
-      saved_contents = event_log.read_event_log()
-      if isinstance(event_log, OCEventLog):
-        sub_elog, sub_content = OCELFlattener().simplify_eLog(event_log, event_log.file_format)
-        sub_event_log_meta = MetaDataAggregator.formulate(
-          object_id=None,
-          object_type='CCEL',
-          file_format="parquet",
-          source_filename=f"sub_log_{object_ids[0]}",
-        )
-        object_ids.append(
-          saver.save_elog(
-            sub_elog,
-            sub_content,
-            sub_event_log_meta
-          )
-        )
-        saved_contents = sub_elog.read_event_log()
-
+      saved_contents = self._format_for_inductive_mining(event_log, object_ids, saver)
       discoverer = DiscoveryFactory.create('CCEL')
       new_BPMN = discoverer.discover_process(saved_contents)
 
@@ -130,7 +131,7 @@ class GraphConstructor:
       log_and_graph_bundler = ArtifactBundler()
       bundle_id = log_and_graph_bundler.bundle_artifacts(
         *object_ids,
-        label = self.get_file_name(file.filename)
+        label = self._get_file_name(file.filename)
       )
 
       log_and_graph_unpacked = BundleUnpacker(bundle_id)
