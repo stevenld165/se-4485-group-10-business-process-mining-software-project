@@ -37,8 +37,7 @@ class GraphConstructor:
   #     methods=["POST"]
   #   )
 
-  @staticmethod
-  def get_file_extension(filename: str) -> str:
+  def get_file_extension(self, filename: str) -> str:
     return os.path.splitext(filename)[-1].lower()
 
   def get_file_name(self, filename: str) -> str:
@@ -131,7 +130,7 @@ class GraphConstructor:
       log_and_graph_bundler = ArtifactBundler()
       bundle_id = log_and_graph_bundler.bundle_artifacts(
         *object_ids,
-        self.get_file_name(file.filename)
+        label = self.get_file_name(file.filename)
       )
 
       log_and_graph_unpacked = BundleUnpacker(bundle_id)
