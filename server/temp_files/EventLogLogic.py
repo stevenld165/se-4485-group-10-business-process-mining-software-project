@@ -45,6 +45,10 @@ class OCEventLog(EventLog):
   def file_format(self):
     return self.file_format
 
+  @file_format.setter
+  def file_format(self, value):
+    self.file_format = value
+
   @property
   def file_contents(self):
     return self.file_contents
@@ -53,9 +57,6 @@ class OCEventLog(EventLog):
   def file_contents(self, df: pd.DataFrame):
     self.file_contents = df
 
-  @file_format.setter
-  def file_format(self, value):
-    self._file_format = value
 
 
 class CCEventLog(EventLog):

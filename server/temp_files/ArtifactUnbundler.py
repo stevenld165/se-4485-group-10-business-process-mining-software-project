@@ -55,7 +55,7 @@ class BundleUnpacker(UnBundler):
       }
 
   def _determine_file_location(self, storage_subdir: str, object_id: str, fmt: str) -> Path:
-    if storage_subdir:
+    if storage_subdir != "":
       return self.store.STORE_DIR / storage_subdir / f"{object_id}.{fmt}"
     else:
       return self.store.STORE_DIR / f"{object_id}.{fmt}"

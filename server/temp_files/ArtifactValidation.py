@@ -40,10 +40,7 @@ class OCELStructureValidator(StructureValidator):
     self._allowed_file_structure: list = allowed_file_structure
 
   def validate_structure(self, file_structure: list) -> bool:
-    if self._allowed_file_structure in file_structure:
-      return True
-    else:
-      return False
+    return set(self._allowed_file_structure).issubset(set(file_structure))
 
 
 class CCELStructureValidator(StructureValidator):
@@ -51,10 +48,7 @@ class CCELStructureValidator(StructureValidator):
     self._allowed_file_structure: list = allowed_file_structure
 
   def validate_structure(self, file_structure: list) -> bool:
-    if self._allowed_file_structure in file_structure:
-      return True
-    else:
-      return False
+    return set(self._allowed_file_structure).issubset(set(file_structure))
 
 
 class Validator:
