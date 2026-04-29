@@ -37,9 +37,8 @@ function injectLanes(
   const process = doc.getElementsByTagNameNS(BPMN, "process")[0]
   const plane = doc.getElementsByTagNameNS(BPMNDI, "BPMNPlane")[0]
 
-  if (!process || !plane) return xml // nothing to do
+  if (!process || !plane) return xml
 
-  // Build activityName -> elementId from existing process children
   const nameToId: Record<string, string> = {}
   const idToElement: Record<string, Element> = {}
   Array.from(process.children).forEach((el) => {
@@ -51,16 +50,14 @@ function injectLanes(
     }
   })
 
-  // Remove any stale laneSets
   Array.from(process.getElementsByTagNameNS(BPMN, "laneSet")).forEach((ls) =>
     ls.parentNode?.removeChild(ls),
   )
 
-  // Build <laneSet>
   const laneSet = doc.createElementNS(BPMN, "laneSet")
   laneSet.setAttribute("id", "laneSet_1")
 
-  Object.entries(roleToActivities).forEach(([role, activities], idx) => {
+  Object.entries(roleToActivities).forEach(([role, activities]) => {
     const laneId = `lane_${role.replace(/\s+/g, "_")}`
 
     const lane = doc.createElementNS(BPMN, "lane")
@@ -74,7 +71,7 @@ function injectLanes(
       ref.textContent = nodeId
       lane.appendChild(ref)
     })
-    // Assign control nodes (start/end/gateway) that point to this lane's activities
+
     const assignedIds = new Set(
       activities.map((a) => nameToId[a]).filter(Boolean),
     )
@@ -93,7 +90,6 @@ function injectLanes(
 
       if (!isControlNode) return
 
-      // Check if this control node points to any activity in this lane
       const outgoing = Array.from(process.children).filter(
         (sf) =>
           sf.localName.toLowerCase().includes("sequenceflow") &&
@@ -111,7 +107,6 @@ function injectLanes(
         }
       }
 
-      // Fallback: check incoming (for end events)
       if (!assignedIds.has(id)) {
         const incoming = Array.from(process.children).filter(
           (sf) =>
@@ -132,7 +127,6 @@ function injectLanes(
     })
     laneSet.appendChild(lane)
 
-    // Placeholder BPMNShape for the lane (dagre will overwrite bounds)
     const shape = doc.createElementNS(BPMNDI, "BPMNShape")
     shape.setAttribute("id", `${laneId}_di`)
     shape.setAttribute("bpmnElement", laneId)
@@ -147,25 +141,17 @@ function injectLanes(
     plane.insertBefore(shape, plane.firstChild)
   })
 
-  // Insert laneSet as first child of process
   process.insertBefore(laneSet, process.firstChild)
 
   return new XMLSerializer().serializeToString(doc)
 }
 
-/**
- * Runs a dagre compound layout over the live bpmn-js element registry and
- * writes positions back via the modeling API.
- *
- * Lanes become compound parent nodes; tasks/events/gateways are children.
- * Sequence flows become edges.
- */
 async function applyDagreLayout(modeler: Modeler): Promise<void> {
-  const NODESEP = 30
-  const EDGESEP = 30
-  const RANKSEP = 85
+  // ── Spacing constants ─────────────────────────────────────────────────────
+  const NODESEP = 20         
+  const EDGESEP = 20          
+  const RANKSEP = 40          
 
-  // ── 1. Get raw moddle definitions (same as pm4py's approach) ──────────────
   const definitions = (modeler as any)._definitions
   const rootProcess = definitions.rootElements.find(
     (el: any) => el.$type === "bpmn:Process",
@@ -175,16 +161,14 @@ async function applyDagreLayout(modeler: Modeler): Promise<void> {
   const flowElements: any[] = rootProcess.flowElements ?? []
   const planeElements: any[] = definitions.diagrams[0].plane.planeElement ?? []
 
-  // Build index: bpmnElement.id -> index in planeElements
   const graphicalDict: Record<string, number> = {}
-  const edgesDict: Record<string, string> = {} // "srcId@tgtId" -> sequenceFlow id
+  const edgesDict: Record<string, string> = {}
 
   planeElements.forEach((pe: any, i: number) => {
     const id = pe.bpmnElement?.id
     if (id) graphicalDict[id] = i
   })
 
-  // ── 2. DFS from start event (same traversal as pm4py) ────────────────────
   const startEvent = flowElements.find((n: any) =>
     n.$type?.toLowerCase().endsWith("startevent"),
   )
@@ -198,7 +182,6 @@ async function applyDagreLayout(modeler: Modeler): Promise<void> {
     if (!visited.includes(el)) visited.push(el)
     if (el.outgoing) {
       for (const out of el.outgoing) {
-        // Record edge: "sourceId@targetId" -> flowId
         edgesDict[`${el.id}@${out.targetRef.id}`] = out.id
         if (!visited.includes(out.targetRef)) {
           toVisit.push(out.targetRef)
@@ -207,7 +190,6 @@ async function applyDagreLayout(modeler: Modeler): Promise<void> {
     }
   }
 
-  // ── 3. Build lane membership map: nodeId -> laneId ───────────────────────
   const nodeToLane: Record<string, string> = {}
   const laneSets: any[] = rootProcess.laneSets ?? []
   laneSets.forEach((ls: any) => {
@@ -220,7 +202,6 @@ async function applyDagreLayout(modeler: Modeler): Promise<void> {
 
   const lanes: any[] = laneSets.flatMap((ls: any) => ls.lanes ?? [])
 
-  // ── Helper: run one dagre pass and return the graph ───────────────────────
   const runDagre = (
     forcedLaneWidth?: number,
     forcedLaneHeight?: number,
@@ -234,23 +215,19 @@ async function applyDagreLayout(modeler: Modeler): Promise<void> {
     })
     g.setDefaultEdgeLabel(() => ({}))
 
-    // Add lane compound nodes — these get the forced dimensions on 2nd pass
     lanes.forEach((lane: any) => {
       const pe = planeElements[graphicalDict[lane.id]]
       const w = forcedLaneWidth ?? pe?.bounds?.width ?? 800
       const h = forcedLaneHeight ?? pe?.bounds?.height ?? 150
-
-      console.log(w)
       g.setNode(lane.id, { label: lane.name ?? lane.id, width: w, height: h })
     })
 
-    // Add flow nodes — always use their ORIGINAL bounds, never scale them
     visited.forEach((el: any) => {
       const pe = planeElements[graphicalDict[el.id]]
       if (!pe?.bounds) return
       g.setNode(el.id, {
         label: el.name ?? el.id,
-        width: pe.bounds.width, // always original, no forced scaling
+        width: pe.bounds.width,
         height: pe.bounds.height,
       })
 
@@ -258,7 +235,6 @@ async function applyDagreLayout(modeler: Modeler): Promise<void> {
       if (laneId) g.setParent(el.id, laneId)
     })
 
-    // Add edges
     flowElements
       .filter((el: any) => el.$type === "bpmn:SequenceFlow")
       .forEach((flow: any) => {
@@ -273,13 +249,11 @@ async function applyDagreLayout(modeler: Modeler): Promise<void> {
     return g
   }
 
-  // ── 4. First pass: measure how large dagre makes the lane containers ───────
   const g1 = runDagre()
 
   let maxLaneWidth = 0
   let maxLaneHeight = 0
 
-  // Only measure lane nodes, not flow nodes
   lanes.forEach((lane: any) => {
     const n = g1.node(lane.id)
     if (!n) return
@@ -287,19 +261,16 @@ async function applyDagreLayout(modeler: Modeler): Promise<void> {
     maxLaneHeight = Math.max(maxLaneHeight, n.height)
   })
 
-  console.log(maxLaneWidth, maxLaneHeight)
+  // ── Lane size multipliers ─────────────────────────────────────────────────
+  const g2 = runDagre(maxLaneWidth * 1.2, maxLaneHeight * 0.75)
 
-  // ── 5. Second pass: expand lanes with pm4py's multipliers ─────────────────
-  const g2 = runDagre(maxLaneWidth * 1.7, maxLaneHeight * 0.87)
-
-  const targetWidth = maxLaneWidth * 1.2
+  const targetWidth = maxLaneWidth * 1.0
 
   lanes.forEach((lane: any) => {
     const n = g2.node(lane.id)
     if (n) {
       const oldWidth = n.width
       n.width = targetWidth
-      // Adjust x position to maintain centering
       n.x = n.x - (oldWidth - targetWidth) / 2
     }
   })
@@ -319,7 +290,6 @@ async function applyDagreLayout(modeler: Modeler): Promise<void> {
     n.x = n.x + shift
   })
 
-  // ── 6. Write node positions back to moddle bounds ─────────────────────────
   g2.nodes().forEach((nodeId) => {
     const n = g2.node(nodeId)
     const idx = graphicalDict[nodeId]
@@ -328,16 +298,12 @@ async function applyDagreLayout(modeler: Modeler): Promise<void> {
     const pe = planeElements[idx]
     if (!pe?.bounds) return
 
-    console.log(n)
-
     pe.bounds.x = n.x - n.width / 2
     pe.bounds.y = n.y - n.height / 2
     pe.bounds.width = n.width
     pe.bounds.height = n.height
   })
 
-  // ── 7. Write edge waypoints, cloning metadata from existing waypoints ──────
-  // (same pattern as pm4py's CustomWaypoint clone)
   g2.edges().forEach((edgeObj) => {
     const key = `${edgeObj.v}@${edgeObj.w}`
     const flowId = edgesDict[key]
@@ -350,8 +316,6 @@ async function applyDagreLayout(modeler: Modeler): Promise<void> {
     if (!pe || !edgeData?.points || !referenceWp) return
 
     pe.waypoint = edgeData.points.map((p: { x: number; y: number }) => {
-      // Clone all moddle metadata from the reference waypoint
-      // so the serializer doesn't reject the new points
       const wp: any = Object.create(Object.getPrototypeOf(referenceWp))
       Object.assign(wp, referenceWp)
       wp.x = p.x
@@ -360,11 +324,11 @@ async function applyDagreLayout(modeler: Modeler): Promise<void> {
     })
   })
 
-  // ── 8. Re-import the mutated XML to force bpmn-js to re-render ────────────
   const { xml: updatedXml } = await (modeler as any).saveXML({ format: false })
   await modeler.importXML(updatedXml)
 }
-// ── Icon helpers (keeps JSX clean) ────────────────────────────────────────────
+
+// ── Icon helpers ──────────────────────────────────────────────────────────────
 function UndoIcon() {
   return (
     <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" width="14" height="14">
@@ -373,7 +337,7 @@ function UndoIcon() {
     </svg>
   )
 }
- 
+
 function RedoIcon() {
   return (
     <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" width="14" height="14">
@@ -382,16 +346,8 @@ function RedoIcon() {
     </svg>
   )
 }
- 
-function SaveIcon() {
-  return (
-    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" width="14" height="14">
-      <path d="M3 3h8l2 2v8a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V3z" />
-      <path d="M6 3v4h5V3M6 10h4" />
-    </svg>
-  )
-}
-// -------------------------------------------------------------------
+
+// ── Component ─────────────────────────────────────────────────────────────────
 const BpmnViewer = forwardRef(({ xml }: BpmnViewerProps, ref) => {
   const containerRef = useRef<HTMLDivElement>(null)
   const [bpmnModeler, setBpmnModeler] = useState<Modeler | null>(null)
@@ -400,18 +356,27 @@ const BpmnViewer = forwardRef(({ xml }: BpmnViewerProps, ref) => {
   const [canUndo, setCanUndo] = useState(false)
   const [canRedo, setCanRedo] = useState(false)
 
-  // Initialize bpmn-js Modeler
   useEffect(() => {
     if (!containerRef.current) return
 
-    // Create Modeler instance
     const modeler = new Modeler({
       container: containerRef.current,
+      // ── LARGER TEXT: override the default label font size ─────────────────
+      textRenderer: {
+        defaultStyle: {
+          fontFamily: "inherit",
+          fontSize: "14px",   // ← was ~12px default; increase further if needed
+          fontWeight: "500",
+        },
+        externalStyle: {
+          fontSize: "14px",
+          fontWeight: "500",
+        },
+      },
     })
 
     setBpmnModeler(modeler)
 
-    //Subscribe to command stack changes for undo/redo state
     const updateUndoRedo = () => {
       const commandStack = modeler.get<any>("commandStack")
       setCanUndo(commandStack.canUndo())
@@ -420,14 +385,12 @@ const BpmnViewer = forwardRef(({ xml }: BpmnViewerProps, ref) => {
 
     modeler.on("commandStack.changed", updateUndoRedo)
 
-    // Cleanup function
     return () => {
       modeler.off("commandStack.changed", updateUndoRedo)
       modeler.destroy()
     }
   }, [])
 
-  // Fetch BPMN from API and render
   const loadBpmnDiagram = async () => {
     if (!bpmnModeler) return
 
@@ -446,19 +409,14 @@ const BpmnViewer = forwardRef(({ xml }: BpmnViewerProps, ref) => {
         ? JSON.parse(roleMapRaw)
         : {}
 
-      // 2. Inject lanes into the XML before importing
       const enrichedXml =
         Object.keys(roleToActivities).length > 0
           ? injectLanes(xml, roleToActivities)
           : xml
 
-      const bpmnXML = enrichedXml
-
-      // Import XML into bpmn-js
-      await bpmnModeler.importXML(bpmnXML)
+      await bpmnModeler.importXML(enrichedXml)
       await applyDagreLayout(bpmnModeler)
 
-      // Optional: Fit diagram to view
       const canvas = bpmnModeler.get("canvas") as {
         zoom: (fit: "fit-viewport", padding: number | "auto") => void
       }
@@ -473,20 +431,18 @@ const BpmnViewer = forwardRef(({ xml }: BpmnViewerProps, ref) => {
     }
   }
 
-  // Load diagram when modeler is ready
   useEffect(() => {
     if (bpmnModeler) {
       loadBpmnDiagram()
     }
   }, [bpmnModeler, xml])
 
-  // Undo/Redo via bpmn-js modeling API
   const handleUndo = () => {
     if (!bpmnModeler) return
     const commandStack = bpmnModeler.get<any>("commandStack")
     if (commandStack.canUndo()) commandStack.undo()
   }
- 
+
   const handleRedo = () => {
     if (!bpmnModeler) return
     const commandStack = bpmnModeler.get<any>("commandStack")
@@ -497,12 +453,9 @@ const BpmnViewer = forwardRef(({ xml }: BpmnViewerProps, ref) => {
     highlightActivity: (activityName: string | null) => {
       if (!bpmnModeler) return
 
-      console.log("attempting to highlight: ", activityName)
-
       const elementRegistry = bpmnModeler.get<any>("elementRegistry")
       const canvas = bpmnModeler.get<any>("canvas")
 
-      // Clear all previous highlights
       elementRegistry.getAll().forEach((el: any) => {
         if (el.type !== "bpmn:SequenceFlow") {
           canvas.removeMarker(el.id, "highlighted-node")
@@ -511,7 +464,6 @@ const BpmnViewer = forwardRef(({ xml }: BpmnViewerProps, ref) => {
 
       if (!activityName) return
 
-      // Find element(s) whose name matches the activity
       const matches = elementRegistry
         .getAll()
         .filter(
@@ -521,19 +473,15 @@ const BpmnViewer = forwardRef(({ xml }: BpmnViewerProps, ref) => {
         )
 
       matches.forEach((el: any) => {
-        console.log(el)
         canvas.addMarker(el.id, "highlighted-node")
-        // Scroll the element into view
         canvas.scrollToElement(el)
       })
     },
   }))
 
-  //Toolbar separator helper
-   const Sep = () => <div style={{ width: 1, height: 20, background: "#e5e7eb", margin: "0 4px" }} />
   return (
     <div className='w-full h-full flex flex-col'>
-      {/* Controls */}
+      {/* Toolbar */}
       <div className='bg-white border-b p-4 flex gap-2'>
         <Button
           onClick={loadBpmnDiagram}
@@ -543,7 +491,6 @@ const BpmnViewer = forwardRef(({ xml }: BpmnViewerProps, ref) => {
           {loading ? "Loading..." : "Refresh Diagram"}
         </Button>
 
-        {/* Optional: Download button */}
         <Button
           onClick={async () => {
             try {
@@ -563,26 +510,23 @@ const BpmnViewer = forwardRef(({ xml }: BpmnViewerProps, ref) => {
         >
           Download Diagram
         </Button>
+
         <Button
           onClick={async () => {
             try {
               const { svg } = await bpmnModeler!.saveSVG()
               const blob = new Blob([svg], { type: "image/svg+xml" })
-
-              const clipboardItem = new ClipboardItem({
-                [blob.type]: blob,
-              })
-
+              const clipboardItem = new ClipboardItem({ [blob.type]: blob })
               await navigator.clipboard.write([clipboardItem])
             } catch (err) {
-              console.error("Failed to save diagram:", err)
+              console.error("Failed to copy diagram:", err)
             }
           }}
           className='px-4 py-2 bg-green-500 text-white hover:bg-green-600'
         >
           Copy Diagram
         </Button>
-        {/* Zoom controls */}
+
         <Button
           onClick={() => (bpmnModeler?.get("zoomScroll") as any)?.stepZoom(1)}
           disabled={!bpmnModeler}
@@ -598,7 +542,7 @@ const BpmnViewer = forwardRef(({ xml }: BpmnViewerProps, ref) => {
         >
           -
         </Button>
-        {/* Fit button */}
+
         <Button
           onClick={() => (bpmnModeler?.get("canvas") as any)?.zoom("fit-viewport", "auto")}
           disabled={!bpmnModeler}
@@ -607,7 +551,6 @@ const BpmnViewer = forwardRef(({ xml }: BpmnViewerProps, ref) => {
           Fit
         </Button>
 
-        {/*Undo button */}
         <Button
           onClick={handleUndo}
           disabled={!canUndo}
@@ -617,7 +560,7 @@ const BpmnViewer = forwardRef(({ xml }: BpmnViewerProps, ref) => {
           <UndoIcon />
           <span className="text-xs">Undo</span>
         </Button>
-        {/*Redo Button */}
+
         <Button
           onClick={handleRedo}
           disabled={!canRedo}
@@ -629,14 +572,13 @@ const BpmnViewer = forwardRef(({ xml }: BpmnViewerProps, ref) => {
         </Button>
       </div>
 
-      {/* Error display */}
       {error && (
         <div className='bg-red-100 border border-red-400 text-red-700 px-4 py-3 m-4 rounded'>
           {error}
         </div>
       )}
 
-      {/* BPMN container */}
+      {/* BPMN canvas */}
       <div
         ref={containerRef}
         className='flex-1 min-h-0 w-full bg-gray-50'
