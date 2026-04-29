@@ -1,19 +1,17 @@
 "use client"
-
 import BpmnViewer, { BpmnViewerHandle } from "@/components/BpmnViewer"
 import { useRef, useState } from "react"
-import { columns, Entry } from "./event-logs/columns"
+import { columns, Entry } from "../components/event-logs/columns"
 
-import { useProcessFile } from "./hooks/useProcessFile"
-import { UploadRecord, useUploadHistory } from "./hooks/useUploadHistory"
+import { useProcessFile } from "../hooks/useProcessFile"
+import { UploadRecord, useUploadHistory } from "../hooks/useUploadHistory"
 
-import UploadHistorySection from "./sections/UploadHistorySection"
-import UploadSection from "./sections/UploadSection"
-import EventLogSection from "./sections/EventLogSection"
-import OverviewSection from "./sections/OverviewSection"
+import UploadHistorySection from "../components/sections/UploadHistorySection"
+import UploadSection from "../components/sections/UploadSection"
+import EventLogSection from "../components/sections/EventLogSection"
+import OverviewSection from "../components/sections/OverviewSection"
 import styles from "./ClientPage.module.css"
 
-// "bpmn" is no longer a separate page — it's the Overview with BPMN maximized
 type Section = "overview" | "eventlog" | "history"
 
 export default function ClientPage() {

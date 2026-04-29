@@ -225,10 +225,14 @@ async function applyDagreLayout(modeler: Modeler): Promise<void> {
     visited.forEach((el: any) => {
       const pe = planeElements[graphicalDict[el.id]]
       if (!pe?.bounds) return
+
+      const isTask = el.$type?.toLowerCase().includes("task")
+      const scale = isTask ? 1.7 : 1.2
+
       g.setNode(el.id, {
         label: el.name ?? el.id,
-        width: pe.bounds.width,
-        height: pe.bounds.height,
+        width: pe.bounds.width * scale,
+        height: pe.bounds.height * scale,
       })
 
       const laneId = nodeToLane[el.id]
@@ -262,9 +266,8 @@ async function applyDagreLayout(modeler: Modeler): Promise<void> {
   })
 
   // ── Lane size multipliers ─────────────────────────────────────────────────
-  const g2 = runDagre(maxLaneWidth * 1.2, maxLaneHeight * 0.75)
-
-  const targetWidth = maxLaneWidth * 1.0
+  const g2 = runDagre(maxLaneWidth * 1.6, maxLaneHeight * 2)
+  const targetWidth = maxLaneWidth * 1
 
   lanes.forEach((lane: any) => {
     const n = g2.node(lane.id)
@@ -281,7 +284,23 @@ async function applyDagreLayout(modeler: Modeler): Promise<void> {
       return n.x - n.width / 2
     }),
   )
+  // --- FIXED LEFT PADDING LOGIC ---
+  const HEADER_WIDTH = 30; 
+  const DESIRED_GAP = 10; 
+  const LEFT_PADDING = HEADER_WIDTH + DESIRED_GAP;
 
+  lanes.forEach((lane) => {
+    const n = g2.node(lane.id)
+    const oldWidth = n.width
+    const currentLeftEdge = n.x - oldWidth / 2
+    const shift = minLeftEdge - currentLeftEdge
+    
+    n.x = n.x + shift
+    n.width = n.width + LEFT_PADDING
+    n.x = n.x - (LEFT_PADDING / 2)
+  })
+  
+  // --- STACK LANES FLUSH (REMOVES ALL GAPS) ---
   lanes.forEach((lane) => {
     const n = g2.node(lane.id)
     const oldWidth = n.width
@@ -365,11 +384,11 @@ const BpmnViewer = forwardRef(({ xml }: BpmnViewerProps, ref) => {
       textRenderer: {
         defaultStyle: {
           fontFamily: "inherit",
-          fontSize: "14px",   // ← was ~12px default; increase further if needed
+          fontSize: "20px",   
           fontWeight: "500",
         },
         externalStyle: {
-          fontSize: "14px",
+          fontSize: "20px",
           fontWeight: "500",
         },
       },
@@ -417,10 +436,35 @@ const BpmnViewer = forwardRef(({ xml }: BpmnViewerProps, ref) => {
       await bpmnModeler.importXML(enrichedXml)
       await applyDagreLayout(bpmnModeler)
 
-      const canvas = bpmnModeler.get("canvas") as {
-        zoom: (fit: "fit-viewport", padding: number | "auto") => void
+      const canvas = bpmnModeler.get("canvas") as any
+      const elementRegistry = bpmnModeler.get("elementRegistry") as any
+
+      // Get all start events (usually just one)
+      const startEvents = elementRegistry.filter(
+        (element: any) => element.type === "bpmn:StartEvent"
+      )
+
+      if (startEvents.length > 0) {
+        const startNode = startEvents[0]
+        
+
+        canvas.zoom(1.2)
+
+        // 2. Get the updated viewbox size after zooming
+        const viewbox = canvas.viewbox()
+        const horizontalOffset = viewbox.width * 0.25;
+        const verticalOffset = viewbox.height * 0.5;
+
+        // 3. Calculate new X and Y to center the screen on the start node
+        viewbox.x = startNode.x - horizontalOffset / 2 + (startNode.width / 2 || 0)
+        viewbox.y = startNode.y - verticalOffset / 2 + (startNode.height / 2 || 0)
+
+        // 4. Apply the centered viewbox
+        canvas.viewbox(viewbox)
+      } else {
+        // Fallback: If no start event exists, just fit the whole viewport
+        canvas.zoom("fit-viewport", "auto")
       }
-      canvas.zoom("fit-viewport", "auto")
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to load BPMN diagram",

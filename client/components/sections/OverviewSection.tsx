@@ -1,7 +1,8 @@
 "use client"
 
 import { useRef, useState, useCallback, RefObject } from "react"
-import BpmnViewer, { BpmnViewerHandle } from "@/components/BpmnViewer"
+import BpmnViewer from "@/components/BpmnViewer"
+import type { BpmnViewerHandle } from "@/components/BpmnViewer"
 import { DataTable } from "../event-logs/data-table"
 import { ColumnDef } from "@tanstack/react-table"
 import styles from "./OverviewSection.module.css"
@@ -17,7 +18,7 @@ interface OverviewSectionProps<TData, TValue> {
   onBpmnMaximizedChange: (value: boolean) => void
 }
 
-export default function OverviewSection<TData, TValue>({
+export default function OverviewSection<TData extends Entry, TValue>({
   columns,
   data,
   xml,
