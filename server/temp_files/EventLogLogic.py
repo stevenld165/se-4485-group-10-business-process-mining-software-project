@@ -23,9 +23,9 @@ class OCEventLog(EventLog):
   allowed_structures_ocel = ['event_id', 'object_id', 'object_type', 'activity', 'timestamp', 'actor']
 
   def __init__(self, contents: pd.DataFrame = None, location: Path = None, file_format: str = None):
-    self.file_contents = contents
+    self._file_contents = contents
     self.file_location = location
-    self.file_format = file_format
+    self._file_format = file_format
     self.file_writer = WriterFactory.create_writer(f'{file_format}')
     self.file_reader = ReaderFactory.create_reader(f'{file_format}')
     self.to_df = ConverterFactory.create_df_converter(self.file_format)
@@ -43,19 +43,19 @@ class OCEventLog(EventLog):
 
   @property
   def file_format(self):
-    return self.file_format
+    return self._file_format
 
   @file_format.setter
   def file_format(self, value):
-    self.file_format = value
+    self._file_format = value
 
   @property
   def file_contents(self):
-    return self.file_contents
+    return self._file_contents
 
   @file_contents.setter
   def file_contents(self, df: pd.DataFrame):
-    self.file_contents = df
+    self._file_contents = df
 
 
 
@@ -63,9 +63,9 @@ class CCEventLog(EventLog):
   allowed_structures_ccel = ['case_id', 'activity', 'timestamp', 'actor']
 
   def __init__(self, contents: pd.DataFrame = None, location: Path = None, file_format: str = None):
-    self.file_contents = contents
+    self._file_contents = contents
     self.file_location = location
-    self.file_format = file_format
+    self._file_format = file_format
     self.file_writer = WriterFactory.create_writer(self.file_format)
     self.file_reader = ReaderFactory.create_reader(self.file_format)
     self.to_df = ConverterFactory.create_df_converter(self.file_format)
@@ -84,19 +84,19 @@ class CCEventLog(EventLog):
 
   @property
   def file_format(self):
-    return self.file_format
+    return self._file_format
 
   @file_format.setter
   def file_format(self, value):
-    self.file_format = value
+    self._file_format = value
 
   @property
   def file_contents(self):
-    return self.file_contents
+    return self._file_contents
 
   @file_contents.setter
   def file_contents(self, df: pd.DataFrame):
-    self.file_contents = df
+    self._file_contents = df
 
 
 class EventLogFactory:
