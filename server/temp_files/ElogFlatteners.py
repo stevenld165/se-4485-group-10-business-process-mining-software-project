@@ -12,8 +12,7 @@ from FormatConversion import ConverterFactory
 
 class ElogFlattener(ABC):
   @abstractmethod
-  @staticmethod
-  def simplify_eLog(elog: EventLog, file_type: str) -> EventLog:
+  def simplify_eLog(self, elog: EventLog, file_type: str) -> EventLog:
     pass
 
 class OCELFlattener(ElogFlattener):

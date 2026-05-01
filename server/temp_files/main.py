@@ -2,6 +2,7 @@ import pandas as pd
 import json
 import os
 import tempfile
+import uvicorn
 
 from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -29,7 +30,7 @@ class GraphConstructor:
   def __init__(self, app: FastAPI):
     self.app = app
     app.add_api_route(
-      "/process-event-log",
+      "/diagram",
       self.construct_graph_from_log,
       methods=["POST"]
     )
@@ -160,7 +161,6 @@ class GraphConstructor:
     temp_file.close()
     return temp_file.name
 
-
   async def construct_graph_from_log(self, file: UploadFile = File(...)):
     content = await file.read()
     file_type = self._get_file_extension(file.filename)
@@ -237,8 +237,8 @@ class GraphConstructor:
       media_type="application/json"
     )
 
-
-def main():
+def _create_app():
+  """Factory function to create and configure the FastAPI app"""
   app = FastAPI()
 
   origins = [
@@ -254,9 +254,12 @@ def main():
     allow_headers=["*"],  # Allows 'Content-Type', 'Authorization', etc.
   )
 
-  use_case_1 = GraphConstructor(app)
+  GraphConstructor(app)  # Registers the /diagram route with the app
+  return app
 
-  use_case_1.construct_graph_from_log()
+def main():
+  app = _create_app()
+  uvicorn.run(app, host="0.0.0.0", port=8000)
 
 
 
