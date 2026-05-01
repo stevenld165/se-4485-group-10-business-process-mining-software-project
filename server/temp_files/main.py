@@ -166,7 +166,7 @@ class GraphConstructor:
     file_type = self._get_file_extension(file.filename)
 
     if not self.input_validator.validate_file_type(self._get_file_extension(file.filename)):
-      raise TypeError("File Format Not Supported")
+      raise TypeError(f"File Format Not Supported: {file_type}")
     file_converter = ConverterFactory.create_df_converter(file_type)
     formatted_input = file_converter.convert_from(content)
     formatted_input = self._normalize_columns(formatted_input)

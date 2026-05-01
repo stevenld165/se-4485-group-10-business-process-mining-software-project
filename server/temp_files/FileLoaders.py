@@ -5,7 +5,6 @@ from Readers import ReaderFactory
 from FormatConversion import ConverterFactory
 
 class FileLoader(ABC):
-  @abstractmethod
   @staticmethod
   def load(path: Path, fmt: str):
     pass
