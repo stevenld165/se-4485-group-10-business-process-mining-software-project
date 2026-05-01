@@ -163,7 +163,8 @@ class GraphConstructor:
 
   async def construct_graph_from_log(self, file: UploadFile = File(...)):
     content = await file.read()
-    file_type = self._get_file_extension(file.filename).lstrip('.')
+    extension_with_dot = self._get_file_extension(file.filename)  # Returns '.csv'
+    file_type = extension_with_dot[1:] if extension_with_dot.startswith('.') else extension_with_dot
 
     if not self.input_validator.validate_file_type(file_type):
       raise TypeError(f"File Format Not Supported: {file_type}")
