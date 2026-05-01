@@ -90,7 +90,7 @@ class GraphConstructor:
       k: v for k, v in column_mapping.items() if k in df.columns
     })
 
-  def _format_for_inductive_mining(self, elog: EventLog, object_ids: list) -> pd.DataFrame:
+  def _elog_for_inductive_mining(self, elog: EventLog, object_ids: list) -> pd.DataFrame:
     if isinstance(elog, OCEventLog):
       sub_elog, sub_content = OCELFlattener().simplify_eLog(elog, elog.file_format)
       sub_event_log_meta = MetaDataAggregator.formulate(
@@ -163,9 +163,9 @@ class GraphConstructor:
 
   async def construct_graph_from_log(self, file: UploadFile = File(...)):
     content = await file.read()
-    file_type = self._get_file_extension(file.filename)
+    file_type = self._get_file_extension(file.filename).lstrip('.')
 
-    if not self.input_validator.validate_file_type(self._get_file_extension(file.filename)):
+    if not self.input_validator.validate_file_type(file_type):
       raise TypeError(f"File Format Not Supported: {file_type}")
     file_converter = ConverterFactory.create_df_converter(file_type)
     formatted_input = file_converter.convert_from(content)
@@ -175,7 +175,7 @@ class GraphConstructor:
     event_log = EventLogFactory.create_elog(
       type_of_elog,
       file_contents = formatted_input,
-      file_type = file_type.strip('.')
+      file_type = file_type
     )
 
     object_ids = list()
@@ -195,7 +195,7 @@ class GraphConstructor:
       )
     )
 
-    saved_contents = self._format_for_inductive_mining(event_log, object_ids)
+    saved_contents = self._elog_for_inductive_mining(event_log, object_ids)
     discoverer = DiscoveryFactory.create('CCEL')
     role_to_activities = discoverer.get_role_activities(saved_contents)
     new_BPMN = discoverer.discover_process(saved_contents)
@@ -237,8 +237,7 @@ class GraphConstructor:
       media_type="application/json"
     )
 
-def _create_app():
-  """Factory function to create and configure the FastAPI app"""
+def _create_app() -> FastAPI:
   app = FastAPI()
 
   origins = [
@@ -254,14 +253,12 @@ def _create_app():
     allow_headers=["*"],  # Allows 'Content-Type', 'Authorization', etc.
   )
 
-  GraphConstructor(app)  # Registers the /diagram route with the app
+  GraphConstructor(app)
   return app
 
-def main():
-  app = _create_app()
-  uvicorn.run(app, host="0.0.0.0", port=8000)
-
+app = _create_app()
 
 
 if __name__ == "__main__":
-  main()
+  import uvicorn
+  uvicorn.run(app, host="0.0.0.0", port=8000)
