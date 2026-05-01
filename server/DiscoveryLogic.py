@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from server.temp_files.EventLogLogic import EventLog, OCEventLog, CCEventLog
+from EventLogLogic import EventLog, OCEventLog, CCEventLog
 import pandas as pd
 
 import pm4py

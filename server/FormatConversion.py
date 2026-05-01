@@ -57,7 +57,7 @@ class ConverterFactory:
       return FromXMLToDFConverter()
     elif 'csv' in file_type.lower():
       return FromCSVToDFConverter()
-    elif 'pqt' in file_type.lower():
+    elif 'parquet' in file_type.lower():
       return FromParaquetToDFConverter()
     else:
       raise ValueError(f"Unsupported type: {file_type}")

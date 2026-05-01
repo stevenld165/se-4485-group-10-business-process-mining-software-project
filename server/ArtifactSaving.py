@@ -59,7 +59,7 @@ class InstanceSaver(Saver):
     self._save_meta_data(object_id, meta)
     return object_id
 
-  def save_graph(self, diagram: BPMNGraph, contents, meta: dict) -> str:
+  def save_graph(self, diagram: BPMNGraph, contents, meta: dict, role_map: dict) -> str:
     object_id = str(uuid.uuid4())
     meta["id"] = object_id
 
@@ -70,7 +70,8 @@ class InstanceSaver(Saver):
       path_name,
       contents,
       object_id,
-      meta['format']
+      meta['format'],
+      role_map = role_map
     )
     self._save_meta_data(object_id, meta)
 

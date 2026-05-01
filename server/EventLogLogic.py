@@ -37,9 +37,9 @@ class OCEventLog(EventLog):
     )
 
   def write_event_log(self, file_location: Path, file_contents: pd.DataFrame, object_id: str, file_format: str) -> None:
-    self.file_writer.write_to_file(file_location, file_contents, object_id, file_format)
+    new_location = self.file_writer.write_to_file(file_location, file_contents, object_id, file_format)
     self.file_contents = file_contents
-    self.file_location = file_location
+    self.file_location = new_location
 
   @property
   def file_format(self):
@@ -61,6 +61,7 @@ class OCEventLog(EventLog):
 
 class CCEventLog(EventLog):
   allowed_structures_ccel = ['case_id', 'activity', 'timestamp', 'actor']
+  elog_format = 'CCEL'
 
   def __init__(self, contents: pd.DataFrame = None, location: Path = None, file_format: str = None):
     self._file_contents = contents
@@ -69,7 +70,6 @@ class CCEventLog(EventLog):
     self.file_writer = WriterFactory.create_writer(self.file_format)
     self.file_reader = ReaderFactory.create_reader(self.file_format)
     self.to_df = ConverterFactory.create_df_converter(self.file_format)
-    pass
 
   def read_event_log(self) -> pd.DataFrame:
     return self.to_df.convert_from(
@@ -77,10 +77,9 @@ class CCEventLog(EventLog):
     )
 
   def write_event_log(self, file_location: Path, file_contents: pd.DataFrame, object_id: str, file_format: str) -> None:
-    self.file_writer.write_to_file(file_location, file_contents, object_id, file_format)
+    new_location = self.file_writer.write_to_file(file_location, file_contents, object_id, file_format)
     self.file_contents = file_contents
-    self.file_location = file_location
-    return
+    self.file_location = new_location
 
   @property
   def file_format(self):
@@ -106,3 +105,5 @@ class EventLogFactory:
       return OCEventLog(contents = file_contents, file_format = file_type)
     if elog_type == 'CCEL':
       return CCEventLog(contents = file_contents, file_format = file_type)
+    else:
+      raise ValueError(f"Unknown event log type: {elog_type}")

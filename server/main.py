@@ -1,175 +1,285 @@
-import io
+import pandas as pd
 import json
-import uuid
-
-from websockets import Response
+import os
+import tempfile
+import uvicorn
 
 from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
-import tempfile
+from ArtifactValidation import Validator
+from FormatConversion import ConverterFactory
 
-import pandas as pd
+from ArtifactSaving import InstanceSaver
+from EventLogLogic import EventLogFactory, OCEventLog, CCEventLog, EventLog
+from MetaDataAnnotation import MetaDataAggregator
+from ArtifactBundler import ArtifactBundler
+from ArtifactUnbundler import BundleUnpacker
+from DiagramLogic import DiagramFactory
+from DiscoveryLogic import DiscoveryFactory
+from ElogFlatteners import OCELFlattener
 
-from pm4py.objects.conversion.log import converter as log_converter
-from pm4py.algo.discovery.dfg import algorithm as dfg_discovery
-from pm4py.visualization.dfg import visualizer as dfg_visualizer
-from pm4py.algo.discovery.inductive import algorithm as inductive_miner
-from pm4py.visualization.petri_net import visualizer as pn_visualizer
-from pm4py.objects.bpmn.exporter import exporter as bpmn_exporter
-from pm4py.visualization.bpmn import visualizer as bpmn_visualizer
-from pm4py.objects.bpmn.obj import BPMN
-from io import BytesIO
-import pm4py
 
-from os import listdir
-from os.path import isfile, join
 
-import xml.etree.ElementTree as ET
+# Traces to Use Case 1
+class GraphConstructor:
+  allowed_extensions_event_log = ['csv', 'json', 'xml']
+  allowed_extensions_graph = ['bpmn']
 
-app = FastAPI()
+  def __init__(self, app: FastAPI):
+    self.app = app
+    app.add_api_route(
+      "/diagram",
+      self.construct_graph_from_log,
+      methods=["POST"]
+    )
+    self._object_factory()
 
-# Define the exact URL of your frontend
-# If you use localhost:3000 in the browser, use localhost:3000 here.
-origins = [
+  def _object_factory(self):
+    self.input_validator = Validator.create_format_validator(
+      "EventLog",
+      self.allowed_extensions_event_log
+    )
+    self.ocel_structure_validator = Validator.create_structure_validator(
+      "OCEL",
+      OCEventLog.allowed_structures_ocel
+    )
+    self.ccel_structure_validator = Validator.create_structure_validator(
+      "CCEL",
+      CCEventLog.allowed_structures_ccel
+    )
+    self.saver = InstanceSaver()
+    self.log_and_graph_bundler = ArtifactBundler()
+
+  def _get_file_extension(self, filename: str) -> str:
+    return os.path.splitext(filename)[-1].lower()
+
+  def _get_file_name(self, filename: str) -> str:
+    return filename.rstrip(self._get_file_extension(filename)).rstrip('.')
+
+  def _validate_event_log_structure(self, user_input: pd.DataFrame) -> str:
+    if self.ocel_structure_validator.validate_structure(user_input.columns.tolist()):
+      return "ocel"
+    elif self.ccel_structure_validator.validate_structure(user_input.columns.tolist()):
+      return "ccel"
+    else:
+      raise ValueError(f"Columns necessary not present. Necessary columns are: \n"
+                       f"CCEL -- {CCEventLog.allowed_structures_ccel}\n"
+                       f"OCEL -- {OCEventLog.allowed_structures_ocel}\n"
+                       f"Your Structure -- {user_input.columns.tolist()}")
+
+
+  def _normalize_columns(self, df: pd.DataFrame) -> pd.DataFrame:
+    column_mapping = {
+      # Case-centric
+      'Case_ID': 'case_id',
+      'case:concept:name': 'case_id',
+
+      # Object-centric
+      'Event_ID': 'event_id',
+      'Object_ID': 'object_id',
+      'Object_Type': 'object_type',
+
+      # Shared
+      'Activity': 'activity',
+      'concept:name': 'activity',
+      'Timestamp': 'timestamp',
+      'time:timestamp': 'timestamp',
+      'Role': 'actor',
+      'Actor': 'actor',
+      'resource': 'actor'
+    }
+
+    return df.rename(columns={
+      k: v for k, v in column_mapping.items() if k in df.columns
+    })
+
+  def _denormalize_for_pm4py(self, df: pd.DataFrame) -> pd.DataFrame:
+    """Convert normalized columns back to XES standard for pm4py"""
+    reverse_mapping = {
+      'case_id': 'case:concept:name',
+      'activity': 'concept:name',
+      'timestamp': 'time:timestamp',
+      'actor': 'resource'
+    }
+    return df.rename(columns={
+      k: v for k, v in reverse_mapping.items() if k in df.columns
+    })
+
+  def _elog_for_inductive_mining(self, elog: EventLog, object_ids: list) -> pd.DataFrame:
+    if isinstance(elog, OCEventLog):
+      sub_elog, sub_content = OCELFlattener().simplify_eLog(elog, elog.file_format)
+      sub_event_log_meta = MetaDataAggregator.formulate(
+        object_id=None,
+        object_type='CCEL',
+        file_format="parquet",
+        source_filename=f"sub_log_{object_ids[0]}",
+      )
+      object_ids.append(
+        self.saver.save_elog(
+          sub_elog,
+          sub_content,
+          sub_event_log_meta
+        )
+      )
+      return sub_elog.read_event_log()
+    elif isinstance(elog, CCEventLog):
+      return elog.read_event_log()
+
+  def _build_response(
+      self,
+      log_and_graph_unpacked: BundleUnpacker,
+      bundle_id: str,
+      role_to_activities: dict
+    ) -> dict:
+
+    types = log_and_graph_unpacked.types()
+
+    if "CCEL" not in types or "Swimlane" not in types:
+      raise ValueError("Invalid bundle: CCEL and Swimlane are required")
+
+    response = {
+      "bundle_id": bundle_id,
+      "includes_ocel": "OCEL" in types,
+      "contents": {
+        "ccel": {
+          "data": log_and_graph_unpacked["CCEL"],
+          "type": "event_log",
+          "metadata": log_and_graph_unpacked.meta("CCEL")
+        },
+        "swimlane": {
+          "data": log_and_graph_unpacked["Swimlane"],
+          "type": "bpmn",
+          "metadata": log_and_graph_unpacked.meta("Swimlane"),
+          "roles": role_to_activities
+        }
+      }
+    }
+
+    # Optional OCEL
+    if "OCEL" in types:
+      response["contents"]["ocel"] = {
+        "data": log_and_graph_unpacked["OCEL"],
+        "type": "event_log",
+        "metadata": log_and_graph_unpacked.meta("OCEL")
+      }
+
+    return response
+
+  def _pack_to_temp_file(self, result: dict) -> str:
+    temp_file = tempfile.NamedTemporaryFile(
+      mode="w",
+      suffix=".json",
+      delete=False
+    )
+
+    json.dump(result, temp_file, indent=2)
+    temp_file.close()
+    return temp_file.name
+
+  async def construct_graph_from_log(self, file: UploadFile = File(...)):
+    content = await file.read()
+    extension_with_dot = self._get_file_extension(file.filename)  # Returns '.csv'
+    file_type = extension_with_dot[1:] if extension_with_dot.startswith('.') else extension_with_dot
+
+    if not self.input_validator.validate_file_type(file_type):
+      raise TypeError(f"File Format Not Supported: {file_type}")
+    file_converter = ConverterFactory.create_df_converter(file_type)
+    formatted_input = file_converter.convert_from(content)
+    formatted_input = self._normalize_columns(formatted_input)
+    type_of_elog = self._validate_event_log_structure(formatted_input)
+
+
+    file_type = 'parquet' if file_type == 'csv' else file_type
+
+    event_log = EventLogFactory.create_elog(
+      type_of_elog.upper(),
+      file_contents = formatted_input,
+      file_type = file_type
+    )
+
+    event_log_meta = MetaDataAggregator.formulate(
+      object_id = None,
+      object_type = type_of_elog.upper(),
+      file_format = "parquet",
+      source_filename = file.filename,
+    )
+
+    object_ids = list()
+    object_ids.append(
+      self.saver.save_elog(
+        event_log,
+        event_log.file_contents,
+        event_log_meta,
+      )
+    )
+
+    saved_contents = self._elog_for_inductive_mining(event_log, object_ids)
+    saved_contents = self._denormalize_for_pm4py(saved_contents)
+    discoverer = DiscoveryFactory.create('CCEL')
+    role_to_activities = discoverer.get_role_activities(saved_contents)
+    new_BPMN = discoverer.discover_process(saved_contents)
+
+    new_swimlane = DiagramFactory.create_diagram('Swimlane', "bpmn", new_BPMN)
+
+    diagram_meta = MetaDataAggregator.formulate(
+      object_id = None,
+      object_type = 'Swimlane',
+      file_format = new_swimlane.file_type,
+      source_filename=f"swimlane_{object_ids[0]}"
+    )
+    object_ids.append(
+      self.saver.save_graph(
+        new_swimlane,
+        new_swimlane.file_contents,
+        diagram_meta,
+        role_map = role_to_activities
+      )
+    )
+
+    bundle_id = self.log_and_graph_bundler.bundle_artifacts(
+      *object_ids,
+      label = self._get_file_name(file.filename)
+    )
+
+    log_and_graph_unpacked = BundleUnpacker(bundle_id)
+
+    result = self._build_response(
+        log_and_graph_unpacked,
+        bundle_id,
+        role_to_activities
+      )
+
+    temp_file_name = self._pack_to_temp_file(result)
+
+    return FileResponse(
+      path = temp_file_name,
+      filename=f"{bundle_id}.json",
+      media_type="application/json"
+    )
+
+def _create_app() -> FastAPI:
+  app = FastAPI()
+
+  origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
-]
+  ]
 
-app.add_middleware(
+  app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,             # Solves "Missing Access-Control-Allow-Origin"
+    allow_origins=origins,  # Solves "Missing Access-Control-Allow-Origin"
     allow_credentials=True,
-    allow_methods=["*"],               # Required for the 'Preflight' OPTIONS request
-    allow_headers=["*"],               # Allows 'Content-Type', 'Authorization', etc.
-)
-
-app.add_middleware(
-  CORSMiddleware,
-  allow_origins=origins,
-  allow_credentials=True,
-  allow_methods=["*"],
-  allow_headers=["*"],
-)
-
-@app.get("/")
-def read_root():
-  return {"hello": "World"}
-
-@app.get("/availible-logs")
-def read_availible_logs():
-  files = [f for f in listdir("examples") if isfile(join("examples", f))]
-
-  return files
-
-
-@app.get("/event-log/{file_name}")
-def read_event_log(file_name: str):
-  df = pd.read_csv(f'examples/{file_name}')
-
-  return df.head(50).to_dict(orient="records")
-
-@app.get("/diagram/{file_name}")
-def read_diagram(file_name: str):
-  df = pd.read_csv(f'examples/{file_name}')
-
-  # Convert the 'Timestamp' column to a datetime format
-  df['Timestamp'] = pd.to_datetime(df['Timestamp'])
-
-  # Use the exact column names from the diagnostic output
-  df.rename(columns={'Case_ID': 'case:concept:name',
-                    'Activity': 'concept:name',
-                    'Timestamp': 'time:timestamp'}, inplace=True)
-
-  # Convert the DataFrame to a PM4Py event log object
-  event_log = log_converter.apply(df)
-
-  bpmn_graph = pm4py.discover_bpmn_inductive(event_log)
-
-  temp_file = tempfile.NamedTemporaryFile(
-    mode='w',
-    suffix='.bpmn',
-    delete=False
+    allow_methods=["*"],  # Required for the 'Preflight' OPTIONS request
+    allow_headers=["*"],  # Allows 'Content-Type', 'Authorization', etc.
   )
 
-  temp_file_path = temp_file.name
-  temp_file.close()
+  GraphConstructor(app)
+  return app
 
-  pm4py.write_bpmn(bpmn_graph, temp_file_path)
-
-
-
-  return FileResponse(
-    path=temp_file_path,
-    media_type="application/xml",
-    filename="discovered_process.bpmn"
-  )
-
-@app.post("/event-log")
-async def read_event_log(file: UploadFile = File(...)):
-  contents = await file.read()
-  df = pd.read_csv(io.StringIO(contents.decode('utf-8')))
-
-  return df.head(50).to_dict(orient="records")
-
-@app.post("/diagram")
-async def create_diagram(file: UploadFile = File(...)):
-  contents = await file.read()
-  df = pd.read_csv(io.StringIO(contents.decode('utf-8')))
-
-  # Convert the 'Timestamp' column to a datetime format
-  df['Timestamp'] = pd.to_datetime(df['Timestamp'])
-
-  role_to_activities = (
-        df.groupby('Role')['Activity']
-        .apply(set)
-        .to_dict()
-    )
-  
-
-  # Use the exact column names from the diagnostic output
-  df.rename(columns={'Case_ID': 'case:concept:name',
-                    'Activity': 'concept:name',
-                    'Timestamp': 'time:timestamp'}, inplace=True)
-
-  # Convert the DataFrame to a PM4Py event log object
-  event_log = log_converter.apply(df)
-
-  bpmn_graph = pm4py.discover_bpmn_inductive(event_log)
+app = _create_app()
 
 
-  temp_file = tempfile.NamedTemporaryFile(
-    mode='w',
-    suffix='.bpmn',
-    delete=False
-  )
-
-  temp_file_path = temp_file.name
-  temp_file.close()
-
-  pm4py.write_bpmn(bpmn_graph, temp_file_path)
-
-  # Serialize roleToActivities with list values for JSON embedding
-  role_map_json = json.dumps({
-      role: list(activities)
-      for role, activities in role_to_activities.items()
-  })
-
-  tree = ET.parse(temp_file_path)
-  root = tree.getroot()
-  BPMN_NS = 'http://www.omg.org/spec/BPMN/20100524/MODEL'
-
-  process_el = root.find(f'{{{BPMN_NS}}}process')
-
-  # Embed role map as a custom attribute — the frontend reads this to
-  # know which activities belong to which lane before injecting lanes
-  process_el.set('data-role-map', role_map_json)
-
-  tree.write(temp_file_path, xml_declaration=True, encoding='unicode')
-
-  return FileResponse(
-    path=temp_file_path,
-    media_type="application/xml",
-    filename="discovered_process.bpmn"
-  )
+if __name__ == "__main__":
+  uvicorn.run(app, host="0.0.0.0", port=8000)
