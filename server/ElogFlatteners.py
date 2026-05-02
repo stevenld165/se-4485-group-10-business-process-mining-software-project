@@ -23,16 +23,16 @@ class OCELFlattener(ElogFlattener):
 
   def simplify_eLog(self, elog: OCEventLog, file_type: str): # -> EventLog:
     elog_contents = elog.read_event_log()
-    object_types = self._infer_object_types(elog_contents)
+    elog_denormalized = DeNormalizer.denormalize_for_pm4py(elog_contents)
     try:
-      oc_event_log = pm4py.convert_log_to_ocel(
-        elog_contents,
-        activity_column="activity",
-        timestamp_column="timestamp",
-        object_types=object_types,
+      oc_event_log = pm4py.convert.convert_log_to_ocel(
+        elog_denormalized,
+        activity_column="ocel:activity",
+        timestamp_column="ocel:timestamp",
+        object_types= ['ocel:type']
       )
     except Exception as e:
-      raise ValueError(f"Contents of elog: {elog_contents.columns.tolist()}")
+      raise ValueError(f"Contents of elog: {elog_denormalized.columns.tolist()}")
     ranking = self._find_object_for_simplification(oc_event_log)
     best_object_type = ranking[0][0]
     flat_df = pm4py.ocel.ocel_flattening(oc_event_log, best_object_type)
@@ -76,11 +76,4 @@ class OCELFlattener(ElogFlattener):
     )
     return score
 
-  def _infer_object_types(self, df: pd.DataFrame) -> list:
-    object_types = []
-    if 'ocel:type' in df.columns:
-      unique_types = df['ocel:type'].unique()
-      for obj_type in unique_types:
-        object_types.append((obj_type, 'object_type'))
-    return object_types
 
