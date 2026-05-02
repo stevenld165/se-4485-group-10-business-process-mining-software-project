@@ -23,7 +23,7 @@ from ArtifactUnbundler import BundleUnpacker
 from DiagramLogic import DiagramFactory
 from DiscoveryLogic import DiscoveryFactory
 from ElogFlatteners import OCELFlattener
-
+from Elog_Normalizer import Normalizer, DeNormalizer
 
 
 # Traces to Use Case 1
@@ -73,43 +73,6 @@ class GraphConstructor:
                        f"OCEL -- {OCEventLog.allowed_structures_ocel}\n"
                        f"Your Structure -- {user_input.columns.tolist()}")
 
-
-  def _normalize_columns(self, df: pd.DataFrame) -> pd.DataFrame:
-    column_mapping = {
-      # Case-centric
-      'Case_ID': 'case_id',
-      'case:concept:name': 'case_id',
-
-      # Object-centric
-      'Event_ID': 'event_id',
-      'Object_ID': 'object_id',
-      'Object_Type': 'object_type',
-
-      # Shared
-      'Activity': 'activity',
-      'concept:name': 'activity',
-      'Timestamp': 'timestamp',
-      'time:timestamp': 'timestamp',
-      'Role': 'actor',
-      'Actor': 'actor',
-      'resource': 'actor'
-    }
-
-    return df.rename(columns={
-      k: v for k, v in column_mapping.items() if k in df.columns
-    })
-
-  def _denormalize_for_pm4py(self, df: pd.DataFrame) -> pd.DataFrame:
-    """Convert normalized columns back to XES standard for pm4py"""
-    reverse_mapping = {
-      'case_id': 'case:concept:name',
-      'activity': 'concept:name',
-      'timestamp': 'time:timestamp',
-      'actor': 'resource'
-    }
-    return df.rename(columns={
-      k: v for k, v in reverse_mapping.items() if k in df.columns
-    })
 
   def _elog_for_inductive_mining(self, elog: EventLog, object_ids: list) -> pd.DataFrame:
     if isinstance(elog, OCEventLog):
@@ -203,7 +166,7 @@ class GraphConstructor:
       raise TypeError(f"File Format Not Supported: {file_type}")
     file_converter = ConverterFactory.create_df_converter(file_type)
     formatted_input = file_converter.convert_from(content)
-    formatted_input = self._normalize_columns(formatted_input)
+    formatted_input = Normalizer.normalize_columns(formatted_input)
     type_of_elog = self._validate_event_log_structure(formatted_input)
 
 
@@ -232,7 +195,7 @@ class GraphConstructor:
     )
 
     saved_contents = self._elog_for_inductive_mining(event_log, object_ids)
-    saved_contents = self._denormalize_for_pm4py(saved_contents)
+    saved_contents = DeNormalizer.denormalize_for_pm4py(saved_contents)
     discoverer = DiscoveryFactory.create('CCEL')
     role_to_activities = discoverer.get_role_activities(saved_contents)
     new_BPMN = discoverer.discover_process(saved_contents)

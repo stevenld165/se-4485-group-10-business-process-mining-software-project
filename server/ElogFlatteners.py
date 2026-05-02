@@ -8,6 +8,7 @@ import pandas as pd
 import re
 
 from FormatConversion import ConverterFactory
+from Elog_Normalizer import DeNormalizer
 
 
 class ElogFlattener(ABC):
@@ -17,18 +18,21 @@ class ElogFlattener(ABC):
 
 class OCELFlattener(ElogFlattener):
   def __init__(self):
-    self.elog_to_df = ConverterFactory.create_df_converter('pqt')
+    self.elog_to_df = ConverterFactory.create_df_converter('parquet')
 
 
   def simplify_eLog(self, elog: OCEventLog, file_type: str): # -> EventLog:
     elog_contents = elog.read_event_log()
     object_types = self._infer_object_types(elog_contents)
-    oc_event_log = pm4py.convert_log_to_ocel(
-      elog_contents,
-      activity_column="activity",
-      timestamp_column="timestamp",
-      object_types = object_types,
-    )
+    try:
+      oc_event_log = pm4py.convert_log_to_ocel(
+        elog_contents,
+        activity_column="activity",
+        timestamp_column="timestamp",
+        object_types=object_types,
+      )
+    except Exception as e:
+      raise ValueError(f"Contents of elog: {elog_contents.columns.tolist()}")
     ranking = self._find_object_for_simplification(oc_event_log)
     best_object_type = ranking[0][0]
     flat_df = pm4py.ocel.ocel_flattening(oc_event_log, best_object_type)
@@ -74,8 +78,8 @@ class OCELFlattener(ElogFlattener):
 
   def _infer_object_types(self, df: pd.DataFrame) -> list:
     object_types = []
-    if 'object_type' in df.columns:
-      unique_types = df['object_type'].unique()
+    if 'ocel:type' in df.columns:
+      unique_types = df['ocel:type'].unique()
       for obj_type in unique_types:
         object_types.append((obj_type, 'object_type'))
     return object_types
