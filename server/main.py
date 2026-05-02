@@ -1,3 +1,5 @@
+from io import BytesIO
+
 import pandas as pd
 import json
 import os
@@ -7,6 +9,8 @@ import uvicorn
 from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+
+import xml.etree.ElementTree as ET
 
 from ArtifactValidation import Validator
 from FormatConversion import ConverterFactory
@@ -144,12 +148,12 @@ class GraphConstructor:
       "includes_ocel": "OCEL" in types,
       "contents": {
         "ccel": {
-          "data": log_and_graph_unpacked["CCEL"],
+          "data": self._safe_json_elog(log_and_graph_unpacked["CCEL"]),
           "type": "event_log",
           "metadata": log_and_graph_unpacked.meta("CCEL")
         },
         "swimlane": {
-          "data": log_and_graph_unpacked["Swimlane"],
+          "data": self._safe_json_graph(log_and_graph_unpacked["Swimlane"]),
           "type": "bpmn",
           "metadata": log_and_graph_unpacked.meta("Swimlane"),
           "roles": role_to_activities
@@ -160,12 +164,24 @@ class GraphConstructor:
     # Optional OCEL
     if "OCEL" in types:
       response["contents"]["ocel"] = {
-        "data": log_and_graph_unpacked["OCEL"],
+        "data": self._safe_json_elog(log_and_graph_unpacked["OCEL"]),
         "type": "event_log",
         "metadata": log_and_graph_unpacked.meta("OCEL")
       }
 
     return response
+
+  def _safe_json_elog(self, data):
+    if isinstance(data, bytes):
+      temp_df = pd.read_parquet(BytesIO(data))
+      return temp_df.to_dict(orient="records")
+    return data
+
+  def _safe_json_graph(self, data):
+    if isinstance(data, ET.Element):
+      return ET.tostring(data, encoding='utf-8').decode('utf-8')
+    return data
+
 
   def _pack_to_temp_file(self, result: dict) -> str:
     temp_file = tempfile.NamedTemporaryFile(
@@ -239,7 +255,7 @@ class GraphConstructor:
     )
 
     bundle_id = self.log_and_graph_bundler.bundle_artifacts(
-      *object_ids,
+      object_ids,
       label = self._get_file_name(file.filename)
     )
 

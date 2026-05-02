@@ -12,7 +12,7 @@ from FormatConversion import ConverterFactory
 
 class Bundler(ABC):
   @abstractmethod
-  def bundle_artifacts(self, *object_ids: str, label: str = "") -> str:
+  def bundle_artifacts(self, object_ids: list, label: str = "") -> str:
     pass
 
 class ArtifactBundler(Bundler):
@@ -23,13 +23,16 @@ class ArtifactBundler(Bundler):
     self.S = FileStorage()
     self.S.init_store()
 
-  def bundle_artifacts(self, *object_ids: str, label: str = "") -> str:
+  def bundle_artifacts(self, object_ids: list, label: str = "") -> str:
     metadata = self.json_converter.convert_to(
       self.json_reader.read_file(self.S.METADATA_FILE)
     )
     bundle_id = str(uuid.uuid4())
-    for oid in object_ids:
-      metadata[oid]["bundle_id"] = bundle_id
+    entries = list()
+    for entry in metadata.values():
+      if entry['id'] in object_ids:
+        entry['bundle_id'] = bundle_id
+        entries.append(entry)
     self.json_writer.write_to_file(
       self.S.METADATA_FILE,
       metadata,
@@ -38,8 +41,10 @@ class ArtifactBundler(Bundler):
     )
 
     members = {
-      metadata[oid]["type"]: oid
+      entry["type"]: oid
+      for entry in metadata.values()
       for oid in object_ids
+      if entry['id'] == oid
     }
     bundles = self.json_converter.convert_to(
       self.json_reader.read_file(self.S.BUNDLE_FILE)

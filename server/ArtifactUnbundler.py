@@ -32,7 +32,7 @@ class BundleUnpacker(UnBundler):
       self.json_reader.read_file(self.store.BUNDLE_FILE)
     )
 
-    metadata = self.json_converter.convert_to(
+    metadata = self.from_json_converter.convert_to(
       self.json_reader.read_file(self.store.METADATA_FILE)
     )
     if bundle_id not in bundles:

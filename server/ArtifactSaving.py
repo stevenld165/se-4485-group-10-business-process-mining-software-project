@@ -74,6 +74,7 @@ class InstanceSaver(Saver):
       role_map = role_map
     )
     self._save_meta_data(object_id, meta)
+    return object_id
 
   # def save_notes(self, contents, meta: dict) -> str:
   #   object_id = str(uuid.uuid4())
