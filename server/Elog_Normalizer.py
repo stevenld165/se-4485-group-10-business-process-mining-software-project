@@ -13,6 +13,14 @@ class Normalizer:
       'Object_ID': 'object_id',
       'Object_Type': 'object_type',
 
+      # OCEL 2.0 Format
+      'ocel:id': 'event_id',
+      'ocel:oid': 'object_id',
+      'ocel:type': 'object_type',
+      'ocel:activity': 'activity',
+      'ocel:timestamp': 'timestamp',
+      'ocel:omap': 'object_id',  # Multi-object references
+
       # Shared
       'Activity': 'activity',
       'concept:name': 'activity',

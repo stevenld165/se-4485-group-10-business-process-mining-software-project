@@ -21,7 +21,56 @@ class TransportFormatter(ABC):
 
 class FromJSONToDFConverter(FormatGeneralizer):
   def convert_from(self, raw: bytes) -> pd.DataFrame:
-    return pd.read_json(io.BytesIO(raw))
+    json_data = json.loads(raw.decode('utf-8'))
+    if self._is_ocel_format(json_data):
+      return self._handle_ocel(json_data)
+    return self._handle_standard_json(json_data)
+
+  def _is_ocel_format(self, data: dict) -> bool:
+    return (isinstance(data, dict) and
+            'ocel' in data and
+            'events' in data and
+            isinstance(data['events'], list))
+
+  def _handle_ocel(self, ocel_data: dict) -> pd.DataFrame:
+    try:
+      events = ocel_data.get('events', [])
+      if not events:
+        raise ValueError("OCEL format detected but 'events' array is empty")
+      df = pd.DataFrame(events)
+      self._make_tabular(df)
+      if 'attributes' in df.columns:
+        self._denormalize_attributes_col(df)
+      return df
+
+    except Exception as e:
+      raise ValueError(
+        f"Failed to convert OCEL format: {str(e)}\n"
+        f"Expected 'events' array with standard event structure."
+      ) from e
+
+  def _make_tabular(self, dataframe: pd.DataFrame) -> None:
+    for col in ['ocel:type', 'ocel:omap']:
+      if col in dataframe.columns:
+        dataframe[col] = dataframe[col].apply(
+          lambda x: '|'.join(str(v) for v in x)
+          if isinstance(x, list)
+          else str(x)
+        )
+
+  def _denormalize_attributes_col(self, dataframe: pd.DataFrame) -> None:
+    if (dataframe['attributes'].dtype == 'object' and
+        isinstance(dataframe['attributes'].iloc[0], dict)):
+
+      attributes_df = pd.json_normalize(dataframe['attributes'])
+
+      dataframe.drop(columns=['attributes'], inplace=True)
+
+      for col in attributes_df.columns:
+        dataframe[col] = attributes_df[col]
+
+  def _handle_standard_json(self, data: dict) -> pd.DataFrame:
+    return pd.DataFrame(data)
 
 class FromXMLToDFConverter(FormatGeneralizer):
   def convert_from(self, raw: bytes) -> pd.DataFrame:

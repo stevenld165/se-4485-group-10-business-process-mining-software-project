@@ -169,13 +169,10 @@ class GraphConstructor:
     formatted_input = Normalizer.normalize_columns(formatted_input)
     type_of_elog = self._validate_event_log_structure(formatted_input)
 
-
-    file_type = 'parquet' if file_type == 'csv' else file_type
-
     event_log = EventLogFactory.create_elog(
       type_of_elog.upper(),
       file_contents = formatted_input,
-      file_type = file_type
+      file_type = 'parquet'
     )
 
     event_log_meta = MetaDataAggregator.formulate(
