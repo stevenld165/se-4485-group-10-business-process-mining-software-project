@@ -1,26 +1,64 @@
 "use client"
 
-import { useState } from "react"
+import Image from "next/image"
+import { useRef, useState } from "react"
 import { columns } from "./event-logs/columns"
 import { useProcessFile } from "./hooks/useProcessFile"
 import UploadSection from "./sections/UploadSection"
 import EventLogSection from "./sections/EventLogSection"
-import BpmnSection from "./sections/BpmnSection"
+import {BpmnViewerHandle} from "@/components/BpmnViewer"
+import { useUploadHistory, UploadRecord } from "./hooks/useUploadhistory"
+import UploadHistorySection from "./sections/UploadHistorySection"
+
 import OverviewSection from "./sections/OverviewSection"
 import styles from "./ClientPage.module.css"
 
-type Section = "overview" | "eventlog" | "bpmn" 
+type Section = "overview" | "eventlog" | "bpmn" | "history"
 
 export default function ClientPage() {
-  const { eventLogData, bpmnXml, processFile } = useProcessFile()
+  const { result, isLoading, error, processFile, loadFromRecord, clearError } =
+    useProcessFile()
+  const {history, addRecord, removeRecord, clearHistory} = useUploadHistory()
   const [activeSection, setActiveSection] = useState<Section>("overview") 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [isUploadOpen, setIsUploadOpen] = useState(false)
+  const [bpmnMaximized, setBpmnMaximized] = useState(false)
 
-  const handleFileSubmit = (file: File) => {
-    processFile(file)
-    setIsUploadOpen(false) 
-    setActiveSection("bpmn")
+  const viewerRef = useRef<BpmnViewerHandle | null>(null)
+  //-----Handlers --------------------------------------------------------------------------------
+  
+  //Handles fileSubmit 
+  const handleFileSubmit = async (file: File) => {
+  console.log("Processing file:", file.name)
+  const processed = await processFile(file)
+  if (processed) {
+    addRecord({
+      fileName: file.name,
+      fileSize: file.size,
+      rowCount: processed.ccelData.length,
+      savedResult: processed,
+    })
+    setActiveSection("overview")
+    setBpmnMaximized(false)
+  }
+  setIsUploadOpen(false)
+}
+
+  const handleLoadRecord = (record: UploadRecord) => {
+    loadFromRecord(record.savedResult)
+    setActiveSection("overview")
+    setBpmnMaximized(false)
+  }
+
+  //Clicking "BPMN diagram" in the sidebar restores the split view with BPMN
+  const handleSelectBpmn  = () => {
+    setActiveSection("overview")
+    setBpmnMaximized(true)
+  } 
+  //Clicking "Overview" in the sidebar restores the split view with BPMN
+  const handleSelectOverview = () => {
+    setActiveSection("overview")
+    setBpmnMaximized(false)
   }
 
   return (
@@ -30,14 +68,34 @@ export default function ClientPage() {
         <UploadSection
           onFileSubmit={handleFileSubmit}
           isOpen={isUploadOpen}
+          isLoading={isLoading}
           onClose={() => setIsUploadOpen(false)}
         />
 
+        {error && (
+            <div className={styles.errorOverlay}>
+              <div className={styles.errorModal}>
+                <div className={styles.errorModalIcon}>⚠️</div>
+                  <h3 className={styles.errorModalTitle}>
+                    {error.kind === "unsupported_format" && "Unsupported File Format"}
+                    {error.kind === "invalid_structure" && "Invalid Event Log Structure"}
+                    {error.kind === "processing_error" && "Processing Error"}
+                    {error.kind === "network_error" && "Connection Error"}
+                  </h3>
+                  <p className={styles.errorModalMessage}>{error.message}</p>
+                  <button className={styles.errorModalBtn} onClick={clearError}>
+                    Close
+                  </button>
+              </div>
+          </div>
+        )}
+
+        {/*Sidebar */}
         <nav className={`${styles.sidebar} ${sidebarCollapsed ? styles.sidebarCollapsed : ""}`}>
           <div className={styles.sidebarLogoRow}>
             {!sidebarCollapsed && (
               <>
-                <img src="/Logo.png" alt="FCG" className={styles.sidebarLogoImg} />
+                <Image src="/Logo.webp" alt="FCG" width={120} height={40} className={styles.sidebarLogoImg} />
                 <span className={styles.sidebarLogoText}></span>
               </>
             )}
@@ -46,8 +104,14 @@ export default function ClientPage() {
               onClick={() => setSidebarCollapsed(prev => !prev)}
               aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
             >
-              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" className={`${styles.collapseIcon} ${sidebarCollapsed ? styles.collapseIconFlipped : ""}`}>
-                <path d="M10 3L6 8l4 5"/>
+              <svg
+                viewBox="0 0 16 16"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                className={`${styles.collapseIcon} ${sidebarCollapsed ? styles.collapseIconFlipped : ""}`}
+              >
+                <path d="M10 3L6 8l4 5" />
               </svg>
             </button>
           </div>
@@ -68,9 +132,26 @@ export default function ClientPage() {
             {!sidebarCollapsed && <span>Upload event log</span>}
           </button>
 
+          {/*History - active when on overview with split view or event log, but not when BPMN maximized */}
           <button
-            className={`${styles.sidebarItem} ${activeSection === "overview" ? styles.sidebarItemActive : ""}`}
-            onClick={() => setActiveSection("overview")}
+            className={`${styles.sidebarItem} ${activeSection === "history" ? styles.sidebarItemActive : ""}`}
+            onClick={() => setActiveSection("history")} title="Upload history"
+          >
+            <svg className={styles.sidebarIcon} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <circle cx="8" cy="8" r="5.5" /><path d="M8 5v3.5l2 2" />
+            </svg>
+            {!sidebarCollapsed && (
+              <span className={styles.sidebarItemInner}>
+                Upload history
+                {history.length > 0 && <span className={styles.badge}>{history.length}</span>}
+              </span>
+            )}
+          </button>
+
+          {/*Overview - actiuve when on overview with split view */}
+          <button
+            className={`${styles.sidebarItem} ${activeSection === "overview" && !bpmnMaximized ? styles.sidebarItemActive : ""}`}
+            onClick={handleSelectOverview}
             title="Overview"
           >
             <svg className={styles.sidebarIcon} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -80,6 +161,7 @@ export default function ClientPage() {
             {!sidebarCollapsed && <span>Overview</span>}
           </button>
 
+          {/*Event log - active when on event log */}
           <button
             className={`${styles.sidebarItem} ${activeSection === "eventlog" ? styles.sidebarItemActive : ""}`}
             onClick={() => setActiveSection("eventlog")}
@@ -91,35 +173,51 @@ export default function ClientPage() {
             {!sidebarCollapsed && <span>Event log</span>}
           </button>
 
+            {/*BPMN - active when on BPMN or overview with BPMN maximized */}
           <button
-            className={`${styles.sidebarItem} ${activeSection === "bpmn" ? styles.sidebarItemActive : ""}`}
-            onClick={() => setActiveSection("bpmn")}
+            className={`${styles.sidebarItem} ${activeSection === "overview" && bpmnMaximized ? styles.sidebarItemActive : ""}`}
+            onClick={handleSelectBpmn}
             title="BPMN diagram"
           >
             <svg className={styles.sidebarIcon} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <circle cx="4" cy="8" r="1.5"/><circle cx="12" cy="4" r="1.5"/><circle cx="12" cy="12" r="1.5"/>
-              <path d="M5.4 7.3L10 4.8M5.4 8.7L10 11.2"/>
+              <circle cx="4" cy="8" r="1.5" />
+              <circle cx="12" cy="4" r="1.5" />
+              <circle cx="12" cy="12" r="1.5" />
+              <path d="M5.4 7.3L10 4.8M5.4 8.7L10 11.2" />
             </svg>
             {!sidebarCollapsed && <span>BPMN diagram</span>}
           </button>
         </nav>
 
+        {/*Main Page */}
         <main className={styles.main}>
           <div className={`${styles.page} ${activeSection === "overview" ? styles.pageActive : ""}`}>
             <OverviewSection
-              columns={columns}
-              data={eventLogData}
-              xml={bpmnXml || ""}
+              ccelData = {result?.ccelData ?? []}
+              ocelData = {result?.ocelData ?? null}
+              xml={result?.bpmnXml || ""}
               onSelectEventLog={() => setActiveSection("eventlog")}
-              onSelectBpmn={() => setActiveSection("bpmn")}
+              viewerRef={viewerRef}
+              bpmnMaximized={bpmnMaximized}
+              onBpmnMaximizedChange={setBpmnMaximized}
             />
           </div>
           <div className={`${styles.page} ${activeSection === "eventlog" ? styles.pageActive : ""}`}>
-            <EventLogSection columns={columns} data={eventLogData} />
+            <EventLogSection
+              ccelData={result?.ccelData ?? []}
+              ocelData={result?.ocelData ?? null}
+            />
           </div>
-          <div className={`${styles.page} ${activeSection === "bpmn" ? styles.pageActive : ""}`}>
-            <BpmnSection xml={bpmnXml || ""} data={eventLogData} columns={columns} />
-          </div>
+
+          {/*Upload History - active when on upload history */}
+         {/* <div className={`${styles.page} ${activeSection === "history" ? styles.pageActive : ""}`}>
+            <UploadHistorySection
+              history={history}
+              onLoad={handleLoadRecord}
+              onDelete={removeRecord}
+              onClear={clearHistory}
+            />
+          </div> */}
         </main>
 
       </div>

@@ -1,41 +1,151 @@
 "use client"
 
 import { useState } from "react"
-import { Entry } from "../event-logs/columns"
 
-export const useProcessFile = () => {
-  const [eventLogData, setEventLogData] = useState<Entry[]>([])
-  const [bpmnXml, setBpmnXml] = useState<string>()
+// ── Types that mirror the backend response shape ──────────────────────────────
 
-  const processFile = async (file: File) => {
-    if (!file || file.type != "text/csv") return
+export interface EventLogRow {
+  [key: string]: string | number | null
+}
 
-    const formData = new FormData()
-    formData.append("file", file)
+export interface ProcessResult {
+  bundleId: string
+  bpmnXml: string
+  ccelData: EventLogRow[]
+  ocelData: EventLogRow[] | null   // null = input was already CCEL
+  roles: Record<string, string[]>
+}
+
+// ── Error types returned as user-visible warnings ─────────────────────────────
+
+export type ProcessErrorKind =
+  | "unsupported_format"   // 400 — file extension not accepted
+  | "invalid_structure"    // 422 — columns don't match OCEL or CCEL
+  | "processing_error"     // 500 — internal server failure
+  | "network_error"        // fetch failed entirely
+
+export interface ProcessError {
+  kind: ProcessErrorKind
+  message: string
+}
+
+// ── Hook ──────────────────────────────────────────────────────────────────────
+
+interface UseProcessFileReturn {
+  result: ProcessResult | null
+  isLoading: boolean
+  error: ProcessError | null
+  processFile: (file: File) => Promise<ProcessResult | null>
+  loadFromRecord: (saved: ProcessResult) => void
+  clearError: () => void
+}
+
+export function useProcessFile(): UseProcessFileReturn {
+  const [result, setResult] = useState<ProcessResult | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<ProcessError | null>(null)
+
+  const clearError = () => setError(null)
+
+  const processFile = async (file: File): Promise<ProcessResult | null> => {
+    setIsLoading(true)
+    setError(null)
 
     try {
-      const eventLogResponse = await fetch("http://127.0.0.1:8000/event-log", {
-        method: "POST",
-        body: formData,
-      })
-      const eventLogJson = await eventLogResponse.json()
-      const bpmnDiagramResponse = await fetch("http://127.0.0.1:8000/diagram", {
+      const formData = new FormData()
+      formData.append("file", file)
+
+      const response = await fetch("http://localhost:8000/diagram", {
         method: "POST",
         body: formData,
       })
 
-      const bpmnDiagramXml = await bpmnDiagramResponse.text()
+      if (!response.ok) {
+        // Parse the FastAPI error detail if available
+        let detail = "An unexpected error occurred."
+        try {
+          const errBody = await response.json()
+          detail = errBody?.detail ?? detail
+        } catch {
+          // body wasn't JSON
+        }
 
-      setEventLogData(eventLogJson)
-      setBpmnXml(bpmnDiagramXml)
-    } catch (error) {
-      console.error(error)
+        const kind: ProcessErrorKind =
+          response.status === 400 ? "unsupported_format"
+          : response.status === 422 ? "invalid_structure"
+          : "processing_error"
+
+        setError({ kind, message: detail })
+        return null
+      }
+
+      const blob = await response.blob()  // for debugging: raw response body as file
+      const text = await blob.text()          // for debugging: raw response body as text
+      const json = JSON.parse(text)                    // for debugging: re-parse to verify it's valid JSON
+      const parsed = _parseBackendResponse(json)
+      setResult(parsed)
+      return parsed
+
+    } catch (err) {
+      setError({
+        kind: "network_error",
+        message:
+          "Could not reach the server. Make sure the backend is running on port 8000.",
+      })
+      return null
+    } finally {
+      setIsLoading(false)
     }
   }
 
-  return {
-    eventLogData,
-    bpmnXml,
-    processFile,
+  const loadFromRecord = (saved: ProcessResult) => {
+    setError(null)
+    setResult(saved)
   }
+
+  return { result, isLoading, error, processFile, loadFromRecord, clearError }
+}
+
+// ── Internal parser ───────────────────────────────────────────────────────────
+
+function _parseBackendResponse(json: any): ProcessResult {
+  const ccelRaw = json.contents?.ccel?.data
+  const ocelRaw = json.contents?.ocel?.data ?? null
+  const swimlaneRaw = json.contents?.swimlane?.data ?? ""
+  const roles = json.contents?.swimlane?.roles ?? {}
+
+  return {
+    bundleId: json.bundle_id ?? "",
+    bpmnXml: _injectRoleMap(swimlaneRaw, roles),
+    ccelData: _normaliseRows(ccelRaw),
+    ocelData: ocelRaw ? _normaliseRows(ocelRaw) : null,
+    roles,
+  }
+}
+
+/**
+ * Embed the role→activities map directly into the BPMN XML as a
+ * data-role-map attribute so BpmnViewer can read it without extra props.
+ */
+function _injectRoleMap(xml: string, roles: Record<string, string[]>): string {
+  if (!xml || Object.keys(roles).length === 0) return xml
+  const encoded = JSON.stringify(roles).replace(/"/g, "&quot;")
+  return xml.replace(/<bpmn:process /i, `<bpmn:process data-role-map="${encoded}" `)
+}
+
+/**
+ * The backend stores DataFrames as JSON records (array of row objects).
+ * Normalise whatever shape arrives into a plain array of row objects.
+ */
+function _normaliseRows(raw: any): EventLogRow[] {
+  if (!raw) return []
+  if (Array.isArray(raw)) return raw as EventLogRow[]
+  // pandas to_json with orient="records" gives an array;
+  // orient="split" gives { columns, data } — handle both
+  if (raw.data && raw.columns) {
+    return (raw.data as any[][]).map((row) =>
+      Object.fromEntries(raw.columns.map((col: string, i: number) => [col, row[i]]))
+    )
+  }
+  return []
 }

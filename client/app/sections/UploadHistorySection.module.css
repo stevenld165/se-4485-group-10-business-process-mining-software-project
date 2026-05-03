@@ -1,0 +1,183 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 28px 32px;
+  overflow-y: auto;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  flex-shrink: 0;
+}
+
+.title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0 0 4px;
+}
+
+.subtitle {
+  font-size: 13px;
+  color: var(--color-text-tertiary);
+  margin: 0;
+}
+
+.clearBtn {
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+  background: none;
+  border: 0.5px solid var(--color-border-tertiary, #e5e5e5);
+  border-radius: 6px;
+  padding: 5px 10px;
+  cursor: pointer;
+  transition: color 150ms, border-color 150ms;
+  white-space: nowrap;
+  margin-top: 2px;
+}
+
+.clearBtn:hover {
+  color: #e53e3e;
+  border-color: #e53e3e;
+}
+
+/* ── Empty state ── */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  gap: 14px;
+  color: var(--color-text-tertiary);
+  font-size: 14px;
+  text-align: center;
+  padding: 60px 0;
+}
+
+.emptyIcon {
+  width: 48px;
+  height: 48px;
+  opacity: 0.35;
+}
+
+/* ── List ── */
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.card {
+  display: flex;
+  align-items: center;
+  border: 0.5px solid var(--color-border-tertiary, #e5e5e5);
+  border-radius: 10px;
+  background: var(--color-background-secondary, #f9f9f9);
+  overflow: hidden;
+  transition: border-color 150ms, box-shadow 150ms;
+}
+
+.card:hover {
+  border-color: var(--color-border-secondary, #d1d1d1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.cardBody {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  min-width: 0;
+}
+
+.cardIcon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: var(--color-background-primary, #fff);
+  border: 0.5px solid var(--color-border-tertiary, #e5e5e5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+}
+
+.cardIcon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.cardInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.cardName {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cardMeta {
+  font-size: 11px;
+  color: var(--color-text-tertiary);
+  white-space: nowrap;
+}
+
+.cardRestore {
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+  margin-left: auto;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: color 150ms;
+}
+
+.card:hover .cardRestore {
+  color: var(--color-text-primary);
+}
+
+.deleteBtn {
+  padding: 0 14px;
+  height: 100%;
+  min-height: 64px;
+  background: none;
+  border: none;
+  border-left: 0.5px solid var(--color-border-tertiary, #e5e5e5);
+  cursor: pointer;
+  color: var(--color-text-tertiary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 150ms, background-color 150ms;
+  flex-shrink: 0;
+}
+
+.deleteBtn:hover {
+  color: #e53e3e;
+  background-color: #fff5f5;
+}
+
+.deleteBtn svg {
+  width: 15px;
+  height: 15px;
+}

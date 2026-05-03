@@ -1,0 +1,222 @@
+{
+  "0bf7e804-9a25-4bfa-98b4-0b5f3bdea285": {
+    "id": "0bf7e804-9a25-4bfa-98b4-0b5f3bdea285",
+    "type": "CCEL",
+    "format": "parquet",
+    "source_file": "HR_Onboarding_2_WITH_ROLES.csv",
+    "created_at": "2026-05-02T19:07:05.201346",
+    "bundle_id": "e37a0f98-1aef-4d73-a795-d17b82da9a33",
+    "attached_to": null,
+    "storage_subdir": "CCEL"
+  },
+  "94ccd633-e642-4b14-9e86-672850bcaf35": {
+    "id": "94ccd633-e642-4b14-9e86-672850bcaf35",
+    "type": "Swimlane",
+    "format": "bpmn",
+    "source_file": "swimlane_0bf7e804-9a25-4bfa-98b4-0b5f3bdea285",
+    "created_at": "2026-05-02T19:07:12.341201",
+    "bundle_id": "e37a0f98-1aef-4d73-a795-d17b82da9a33",
+    "attached_to": null,
+    "storage_subdir": "BPMN"
+  },
+  "d2e8ddad-3940-42bf-b1ce-08e568e4aa46": {
+    "id": "d2e8ddad-3940-42bf-b1ce-08e568e4aa46",
+    "type": "CCEL",
+    "format": "parquet",
+    "source_file": "HR_Onboarding_2_WITH_ROLES.csv",
+    "created_at": "2026-05-03T05:48:55.051586",
+    "bundle_id": "c025048d-e8bd-4a4d-883c-016e935c6f7f",
+    "attached_to": null,
+    "storage_subdir": "CCEL"
+  },
+  "7f788cc5-5795-4871-84c2-c3e3b48be323": {
+    "id": "7f788cc5-5795-4871-84c2-c3e3b48be323",
+    "type": "Swimlane",
+    "format": "bpmn",
+    "source_file": "swimlane_d2e8ddad-3940-42bf-b1ce-08e568e4aa46",
+    "created_at": "2026-05-03T05:48:55.268218",
+    "bundle_id": "c025048d-e8bd-4a4d-883c-016e935c6f7f",
+    "attached_to": null,
+    "storage_subdir": "BPMN"
+  },
+  "92268429-8e06-4c0a-9cfc-9e371e8d4a19": {
+    "id": "92268429-8e06-4c0a-9cfc-9e371e8d4a19",
+    "type": "CCEL",
+    "format": "parquet",
+    "source_file": "HR_Onboarding_2_WITH_ROLES.csv",
+    "created_at": "2026-05-03T05:56:23.199640",
+    "bundle_id": "bb722525-ec8a-4ee6-a55a-4673f282cf49",
+    "attached_to": null,
+    "storage_subdir": "CCEL"
+  },
+  "7214519f-1769-423c-b27a-88ed23b29ebb": {
+    "id": "7214519f-1769-423c-b27a-88ed23b29ebb",
+    "type": "Swimlane",
+    "format": "bpmn",
+    "source_file": "swimlane_92268429-8e06-4c0a-9cfc-9e371e8d4a19",
+    "created_at": "2026-05-03T05:56:23.532056",
+    "bundle_id": "bb722525-ec8a-4ee6-a55a-4673f282cf49",
+    "attached_to": null,
+    "storage_subdir": "BPMN"
+  },
+  "65171104-d42b-4c7e-83d0-55ed15cee313": {
+    "id": "65171104-d42b-4c7e-83d0-55ed15cee313",
+    "type": "CCEL",
+    "format": "parquet",
+    "source_file": "HR_Onboarding_2_WITH_ROLES.csv",
+    "created_at": "2026-05-03T06:11:46.148410",
+    "bundle_id": "24ceba10-3555-4ccc-a120-687f21037e75",
+    "attached_to": null,
+    "storage_subdir": "CCEL"
+  },
+  "53ac929b-ca01-4589-8fe4-6245c71375b4": {
+    "id": "53ac929b-ca01-4589-8fe4-6245c71375b4",
+    "type": "Swimlane",
+    "format": "bpmn",
+    "source_file": "swimlane_65171104-d42b-4c7e-83d0-55ed15cee313",
+    "created_at": "2026-05-03T06:11:46.331694",
+    "bundle_id": "24ceba10-3555-4ccc-a120-687f21037e75",
+    "attached_to": null,
+    "storage_subdir": "BPMN"
+  },
+  "a4063c65-bf3c-4722-be93-e44acc364f69": {
+    "id": "a4063c65-bf3c-4722-be93-e44acc364f69",
+    "type": "CCEL",
+    "format": "parquet",
+    "source_file": "HR_Onboarding_2_WITH_ROLES.csv",
+    "created_at": "2026-05-03T06:39:27.269266",
+    "bundle_id": "7b808193-8206-47da-9998-91cabb097859",
+    "attached_to": null,
+    "storage_subdir": "CCEL"
+  },
+  "90ae546b-53e5-403c-ade2-e068dbfdf954": {
+    "id": "90ae546b-53e5-403c-ade2-e068dbfdf954",
+    "type": "Swimlane",
+    "format": "bpmn",
+    "source_file": "swimlane_a4063c65-bf3c-4722-be93-e44acc364f69",
+    "created_at": "2026-05-03T06:39:27.559485",
+    "bundle_id": "7b808193-8206-47da-9998-91cabb097859",
+    "attached_to": null,
+    "storage_subdir": "BPMN"
+  },
+  "4751f9e5-852c-4412-b289-ee683c5b9ef8": {
+    "id": "4751f9e5-852c-4412-b289-ee683c5b9ef8",
+    "type": "CCEL",
+    "format": "parquet",
+    "source_file": "HR_Onboarding_WITH_BRANCHES_AND_LOOPS.csv",
+    "created_at": "2026-05-03T06:39:54.277776",
+    "bundle_id": "35f6daa3-6c83-42e9-a171-87599976c96a",
+    "attached_to": null,
+    "storage_subdir": "CCEL"
+  },
+  "67387d09-122f-4597-96cb-43f7d469ab53": {
+    "id": "67387d09-122f-4597-96cb-43f7d469ab53",
+    "type": "Swimlane",
+    "format": "bpmn",
+    "source_file": "swimlane_4751f9e5-852c-4412-b289-ee683c5b9ef8",
+    "created_at": "2026-05-03T06:39:54.313831",
+    "bundle_id": "35f6daa3-6c83-42e9-a171-87599976c96a",
+    "attached_to": null,
+    "storage_subdir": "BPMN"
+  },
+  "110cb4ed-5129-48f1-bfa3-e7de533c306a": {
+    "id": "110cb4ed-5129-48f1-bfa3-e7de533c306a",
+    "type": "CCEL",
+    "format": "parquet",
+    "source_file": "HR_Onboarding_WITH_BRANCHES_AND_LOOPS.csv",
+    "created_at": "2026-05-03T23:00:31.789371",
+    "bundle_id": "93082daf-e528-4b06-bf93-55bde182b6be",
+    "attached_to": null,
+    "storage_subdir": "CCEL"
+  },
+  "785536b4-53d6-400d-939a-77ee13ed8e46": {
+    "id": "785536b4-53d6-400d-939a-77ee13ed8e46",
+    "type": "Swimlane",
+    "format": "bpmn",
+    "source_file": "swimlane_110cb4ed-5129-48f1-bfa3-e7de533c306a",
+    "created_at": "2026-05-03T23:00:31.938564",
+    "bundle_id": "93082daf-e528-4b06-bf93-55bde182b6be",
+    "attached_to": null,
+    "storage_subdir": "BPMN"
+  },
+  "e7e26bee-80a4-41f0-8457-2aad3b3387dc": {
+    "id": "e7e26bee-80a4-41f0-8457-2aad3b3387dc",
+    "type": "CCEL",
+    "format": "parquet",
+    "source_file": "HR_Onboarding_WITH_BRANCHES_AND_LOOPS.csv",
+    "created_at": "2026-05-03T23:05:13.656632",
+    "bundle_id": "9a780698-a5a5-4430-92a7-a0cfab7596b1",
+    "attached_to": null,
+    "storage_subdir": "CCEL"
+  },
+  "d4f92ca9-3d22-4afd-93c8-8691cb1e2955": {
+    "id": "d4f92ca9-3d22-4afd-93c8-8691cb1e2955",
+    "type": "Swimlane",
+    "format": "bpmn",
+    "source_file": "swimlane_e7e26bee-80a4-41f0-8457-2aad3b3387dc",
+    "created_at": "2026-05-03T23:05:13.669175",
+    "bundle_id": "9a780698-a5a5-4430-92a7-a0cfab7596b1",
+    "attached_to": null,
+    "storage_subdir": "BPMN"
+  },
+  "e01989cb-457c-4595-87df-40853ebfc8aa": {
+    "id": "e01989cb-457c-4595-87df-40853ebfc8aa",
+    "type": "CCEL",
+    "format": "parquet",
+    "source_file": "HR_Onboarding_WITH_BRANCHES_AND_LOOPS.csv",
+    "created_at": "2026-05-03T23:14:26.004244",
+    "bundle_id": "612dce99-3450-481c-9e33-9250362e417a",
+    "attached_to": null,
+    "storage_subdir": "CCEL"
+  },
+  "e7f2e62d-3d5e-4738-8f6d-85e7f6cc697a": {
+    "id": "e7f2e62d-3d5e-4738-8f6d-85e7f6cc697a",
+    "type": "Swimlane",
+    "format": "bpmn",
+    "source_file": "swimlane_e01989cb-457c-4595-87df-40853ebfc8aa",
+    "created_at": "2026-05-03T23:14:26.146345",
+    "bundle_id": "612dce99-3450-481c-9e33-9250362e417a",
+    "attached_to": null,
+    "storage_subdir": "BPMN"
+  },
+  "ba43b3d8-2416-45c3-8202-926d84c52909": {
+    "id": "ba43b3d8-2416-45c3-8202-926d84c52909",
+    "type": "CCEL",
+    "format": "parquet",
+    "source_file": "HR_Onboarding_WITH_BRANCHES_AND_LOOPS.csv",
+    "created_at": "2026-05-03T23:15:34.802339",
+    "bundle_id": "b961adef-771b-4945-bc4d-9e0b3a041b5d",
+    "attached_to": null,
+    "storage_subdir": "CCEL"
+  },
+  "195c60f5-f2a8-4506-90fa-a2b5ba87fea7": {
+    "id": "195c60f5-f2a8-4506-90fa-a2b5ba87fea7",
+    "type": "Swimlane",
+    "format": "bpmn",
+    "source_file": "swimlane_ba43b3d8-2416-45c3-8202-926d84c52909",
+    "created_at": "2026-05-03T23:15:34.812858",
+    "bundle_id": "b961adef-771b-4945-bc4d-9e0b3a041b5d",
+    "attached_to": null,
+    "storage_subdir": "BPMN"
+  },
+  "b1f4ba01-a93f-45d1-b35d-d8f4cafa55aa": {
+    "id": "b1f4ba01-a93f-45d1-b35d-d8f4cafa55aa",
+    "type": "CCEL",
+    "format": "parquet",
+    "source_file": "HR_Onboarding_WITH_BRANCHES_AND_LOOPS.csv",
+    "created_at": "2026-05-03T23:37:04.192447",
+    "bundle_id": "e6339345-691d-40f1-8ee3-d623f82b125f",
+    "attached_to": null,
+    "storage_subdir": "CCEL"
+  },
+  "7c07ea6b-7f86-4678-b018-59c0a958b348": {
+    "id": "7c07ea6b-7f86-4678-b018-59c0a958b348",
+    "type": "Swimlane",
+    "format": "bpmn",
+    "source_file": "swimlane_b1f4ba01-a93f-45d1-b35d-d8f4cafa55aa",
+    "created_at": "2026-05-03T23:37:04.315189",
+    "bundle_id": "e6339345-691d-40f1-8ee3-d623f82b125f",
+    "attached_to": null,
+    "storage_subdir": "BPMN"
+  }
+}

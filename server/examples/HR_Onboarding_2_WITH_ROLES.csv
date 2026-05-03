@@ -1,4 +1,4 @@
-Case_ID,Activity,Timestamp,CO2_Impact,Activity_Cost,Role
+Case_ID,Activity,Timestamp,CO2_Impact,Activity_Cost,Actor
 EMP00001,First Week Check-in,2020-01-24 16:22:10,0.47,488.29,HR Manager
 EMP00001,Introduction Session,2020-02-01 01:22:10,1.64,113.26,HR Manager
 EMP00001,Complete Documentation,2020-02-07 13:22:10,1.82,194.07,New Hire
