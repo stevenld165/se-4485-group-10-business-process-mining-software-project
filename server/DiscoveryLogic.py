@@ -16,7 +16,6 @@ class DiscoveryAlg(ABC):
   @abstractmethod
   def discover_process(self, log: EventLog):
     pass
-  # figure out what it outputs; either a graph object, or a file formatted to be written to a graph
 
 # class OCELDiscovery(DiscoveryAlg):
 #   def discover_process(self, log: OCEL):
@@ -32,11 +31,11 @@ class CCELDiscovery(DiscoveryAlg):
     return pm4py.discover_bpmn_inductive(event_log)
 
   def get_role_activities(self, df: pd.DataFrame) -> dict:
-    if 'actor' not in df.columns or 'activity' not in df.columns:
+    if 'resource' not in df.columns or 'concept:name' not in df.columns:
       return {}
 
     role_map = (
-      df.groupby('actor')['activity']
+      df.groupby('resource')['concept:name']
       .apply(set)
       .to_dict()
     )

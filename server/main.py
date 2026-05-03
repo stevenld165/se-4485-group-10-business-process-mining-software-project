@@ -1,5 +1,3 @@
-from io import BytesIO
-
 import pandas as pd
 import json
 import os
@@ -9,8 +7,6 @@ import uvicorn
 from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
-
-import xml.etree.ElementTree as ET
 
 from ArtifactValidation import Validator
 from FormatConversion import ConverterFactory
@@ -24,6 +20,7 @@ from DiagramLogic import DiagramFactory
 from DiscoveryLogic import DiscoveryFactory
 from ElogFlatteners import OCELFlattener
 from Elog_Normalizer import Normalizer, DeNormalizer
+from FileResponses import ConstructGraphResponse
 
 
 # Traces to Use Case 1
@@ -93,58 +90,6 @@ class GraphConstructor:
       return sub_elog.read_event_log()
     elif isinstance(elog, CCEventLog):
       return elog.read_event_log()
-
-  def _build_response(
-      self,
-      log_and_graph_unpacked: BundleUnpacker,
-      bundle_id: str,
-      role_to_activities: dict
-    ) -> dict:
-
-    types = log_and_graph_unpacked.types()
-
-    if "CCEL" not in types or "Swimlane" not in types:
-      raise ValueError("Invalid bundle: CCEL and Swimlane are required")
-
-    response = {
-      "bundle_id": bundle_id,
-      "includes_ocel": "OCEL" in types,
-      "contents": {
-        "ccel": {
-          "data": self._safe_json_elog(log_and_graph_unpacked["CCEL"]),
-          "type": "event_log",
-          "metadata": log_and_graph_unpacked.meta("CCEL")
-        },
-        "swimlane": {
-          "data": self._safe_json_graph(log_and_graph_unpacked["Swimlane"]),
-          "type": "bpmn",
-          "metadata": log_and_graph_unpacked.meta("Swimlane"),
-          "roles": role_to_activities
-        }
-      }
-    }
-
-    # Optional OCEL
-    if "OCEL" in types:
-      response["contents"]["ocel"] = {
-        "data": self._safe_json_elog(log_and_graph_unpacked["OCEL"]),
-        "type": "event_log",
-        "metadata": log_and_graph_unpacked.meta("OCEL")
-      }
-
-    return response
-
-  def _safe_json_elog(self, data):
-    if isinstance(data, bytes):
-      temp_df = pd.read_parquet(BytesIO(data))
-      return temp_df.to_dict(orient="records")
-    return data
-
-  def _safe_json_graph(self, data):
-    if isinstance(data, ET.Element):
-      return ET.tostring(data, encoding='utf-8').decode('utf-8')
-    return data
-
 
   def _pack_to_temp_file(self, result: dict) -> str:
     temp_file = tempfile.NamedTemporaryFile(
@@ -221,7 +166,8 @@ class GraphConstructor:
 
     log_and_graph_unpacked = BundleUnpacker(bundle_id)
 
-    result = self._build_response(
+    response_creator = ConstructGraphResponse()
+    result = response_creator.build_response(
         log_and_graph_unpacked,
         bundle_id,
         role_to_activities
