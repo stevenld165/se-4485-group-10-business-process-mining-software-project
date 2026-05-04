@@ -42,6 +42,11 @@ class SwimlaneDiagram(BPMNGraph):
     self.file_location = new_location
 
   def _add_role_map(self, role_map: dict, path: Path) -> None:
+    ET.register_namespace('bpmn', 'http://www.omg.org/spec/BPMN/20100524/MODEL')
+    ET.register_namespace('bpmndi', 'http://www.omg.org/spec/BPMN/20100524/DI')
+    ET.register_namespace('dc', 'http://www.omg.org/spec/DD/20100524/DC')
+    ET.register_namespace('di', 'http://www.omg.org/spec/DD/20100524/DI')
+
     role_map_json = json.dumps({
       role: list(activities) if isinstance(activities, set) else activities
       for role, activities in role_map.items()
@@ -51,7 +56,7 @@ class SwimlaneDiagram(BPMNGraph):
     bpmn_ns = 'http://www.omg.org/spec/BPMN/20100524/MODEL'
     process_el = root.find(f'{{{bpmn_ns}}}process')
     if process_el is not None:
-      process_el.set('data-role-map', role_map_json)
+      process_el.set('data-actor-map', role_map_json)
     tree.write(str(path), xml_declaration=True, encoding='utf-8')
 
   @property
