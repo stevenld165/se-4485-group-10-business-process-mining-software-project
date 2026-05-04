@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from cProfile import label
 from pathlib import Path
 import json
 import xml.etree.ElementTree as ET
@@ -18,8 +17,7 @@ class BPMNGraph(ABC):
     pass
 
   @abstractmethod
-  def write_graph(self, file_location: str, file_contents: str, object_id: str,
-                  file_type: str, role_map: dict, file_label: str) -> None:
+  def write_graph(self, file_location: str, file_contents: str, object_id: str, file_type: str, role_map: dict) -> None:
     pass
 
 
@@ -37,19 +35,13 @@ class SwimlaneDiagram(BPMNGraph):
       self.file_reader.read_file(self.file_location)
     )
 
-  def write_graph(self, file_location: Path, file_contents: BPMN, object_id: str,
-                  file_type: str, role_map: dict, file_label: str = None) -> None:
-    new_location = self.file_writer.write_to_file(file_location, file_contents, object_id, file_type, label = file_label)
+  def write_graph(self, file_location: Path, file_contents: BPMN, object_id: str, file_type: str, role_map: dict) -> None:
+    new_location = self.file_writer.write_to_file(file_location, file_contents, object_id, file_type)
     self._add_role_map(role_map, new_location)
     self.file_contents = file_contents
     self.file_location = new_location
 
   def _add_role_map(self, role_map: dict, path: Path) -> None:
-    ET.register_namespace('bpmn', 'http://www.omg.org/spec/BPMN/20100524/MODEL')
-    ET.register_namespace('bpmndi', 'http://www.omg.org/spec/BPMN/20100524/DI')
-    ET.register_namespace('dc', 'http://www.omg.org/spec/DD/20100524/DC')
-    ET.register_namespace('di', 'http://www.omg.org/spec/DD/20100524/DI')
-
     role_map_json = json.dumps({
       role: list(activities) if isinstance(activities, set) else activities
       for role, activities in role_map.items()
@@ -59,7 +51,7 @@ class SwimlaneDiagram(BPMNGraph):
     bpmn_ns = 'http://www.omg.org/spec/BPMN/20100524/MODEL'
     process_el = root.find(f'{{{bpmn_ns}}}process')
     if process_el is not None:
-      process_el.set('data-actor-map', role_map_json)
+      process_el.set('data-role-map', role_map_json)
     tree.write(str(path), xml_declaration=True, encoding='utf-8')
 
   @property

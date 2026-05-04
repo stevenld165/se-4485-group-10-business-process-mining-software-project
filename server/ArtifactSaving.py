@@ -1,8 +1,6 @@
 from abc import ABC, abstractmethod
 import os
 import uuid
-from cProfile import label
-
 import pandas as pd
 from pathlib import Path
 from datetime import datetime
@@ -48,7 +46,6 @@ class InstanceSaver(Saver):
   def save_elog(self, elog: EventLog, contents: pd.DataFrame, meta: dict) -> str:
     object_id = str(uuid.uuid4())
     meta["id"] = object_id
-    label = meta.get("source_filename", None)
 
     path_name = self.storage_path.determine_directory(elog)
     meta["storage_subdir"] = str(path_name.relative_to(self.storage_path.STORE_DIR))
@@ -57,8 +54,7 @@ class InstanceSaver(Saver):
       path_name,
       contents,
       object_id,
-      meta['format'],
-      label = label
+      meta['format']
     )
     self._save_meta_data(object_id, meta)
     return object_id
@@ -75,8 +71,7 @@ class InstanceSaver(Saver):
       contents,
       object_id,
       meta['format'],
-      role_map = role_map,
-      label = label
+      role_map = role_map
     )
     self._save_meta_data(object_id, meta)
     return object_id
