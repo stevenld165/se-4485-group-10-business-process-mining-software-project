@@ -15,7 +15,8 @@ class EventLog(metaclass=ABCMeta):
     pass
 
   @abstractmethod
-  def write_event_log(self, file_location: Path, file_contents: pd.DataFrame, object_id: str, file_format: str) -> None:
+  def write_event_log(self, file_location: Path, file_contents: pd.DataFrame, object_id: str,
+                      file_format: str, file_label: str) -> None:
     pass
 
 
@@ -36,8 +37,9 @@ class OCEventLog(EventLog):
       self.file_reader.read_file(self.file_location)
     )
 
-  def write_event_log(self, file_location: Path, file_contents: pd.DataFrame, object_id: str, file_format: str) -> None:
-    new_location = self.file_writer.write_to_file(file_location, file_contents, object_id, file_format)
+  def write_event_log(self, file_location: Path, file_contents: pd.DataFrame, object_id: str,
+                      file_format: str, file_label: str = None) -> None:
+    new_location = self.file_writer.write_to_file(file_location, file_contents, object_id, file_format, label=file_label)
     self.file_contents = file_contents
     self.file_location = new_location
 
@@ -76,8 +78,9 @@ class CCEventLog(EventLog):
       self.file_reader.read_file(self.file_location)
     )
 
-  def write_event_log(self, file_location: Path, file_contents: pd.DataFrame, object_id: str, file_format: str) -> None:
-    new_location = self.file_writer.write_to_file(file_location, file_contents, object_id, file_format)
+  def write_event_log(self, file_location: Path, file_contents: pd.DataFrame, object_id: str,
+                      file_format: str, file_label: str = None) -> None:
+    new_location = self.file_writer.write_to_file(file_location, file_contents, object_id, file_format, label=file_label)
     self.file_contents = file_contents
     self.file_location = new_location
 

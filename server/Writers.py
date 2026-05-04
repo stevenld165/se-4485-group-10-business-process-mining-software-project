@@ -10,29 +10,32 @@ from pm4py import BPMN
 
 class FileWriter(ABC):
   @abstractmethod
-  def write_to_file(self, f_loc: Path, f_cont, object_id: str, f_fmt: str) -> Path:
+  def write_to_file(self, f_loc: Path, f_cont, object_id: str, f_fmt: str, label: str or None) -> Path:
     pass
 
 class WriteAsParquet(FileWriter):
-  def write_to_file(self, f_loc: Path, f_cont, object_id: str, f_fmt: str) -> Path:
-    path = f_loc / f"{object_id}.{f_fmt}"
+  def write_to_file(self, f_loc: Path, f_cont, object_id: str, f_fmt: str, label: str = None) -> Path:
+    name = f"{label}_{object_id}" if label else object_id
+    path = f_loc / f"{name}.{f_fmt}"
     f_cont.to_parquet(path, index=False)
     return path
 
 class WriteAsJson(FileWriter):
-  def write_to_file(self, f_loc: Path, f_cont, object_id: str, f_fmt: str) -> Path:
+  def write_to_file(self, f_loc: Path, f_cont, object_id: str, f_fmt: str, label: str = None) -> Path:
     f_loc.write_text(json.dumps(f_cont, indent=2))
     return f_loc
 
 class WriteAsTxt(FileWriter):
-  def write_to_file(self, f_loc: Path, f_cont, object_id: str, f_fmt: str) -> Path:
-    path = f_loc / f"{object_id}.{f_fmt}"
+  def write_to_file(self, f_loc: Path, f_cont, object_id: str, f_fmt: str, label: str = None) -> Path:
+    name = f"{label}_{object_id}" if label else object_id
+    path = f_loc / f"{name}.{f_fmt}"
     path.write_text(f_cont, encoding="utf-8")
     return path
 
 class WriteAsBPMN(FileWriter):
-  def write_to_file(self, f_loc: Path, f_cont: BPMN, object_id: str, f_fmt: str) -> Path:
-    path = f_loc / f"{object_id}.{f_fmt}"
+  def write_to_file(self, f_loc: Path, f_cont: BPMN, object_id: str, f_fmt: str, label: str = None) -> Path:
+    name = f"{label}_{object_id}" if label else object_id
+    path = f_loc / f"{name}.{f_fmt}"
     pm4py.write_bpmn(f_cont, str(path))
     return path
 

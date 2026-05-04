@@ -71,14 +71,14 @@ class GraphConstructor:
                        f"Your Structure -- {user_input.columns.tolist()}")
 
 
-  def _elog_for_inductive_mining(self, elog: EventLog, object_ids: list) -> pd.DataFrame:
+  def _elog_for_inductive_mining(self, elog: EventLog, object_ids: list, event_log_meta: dict) -> pd.DataFrame:
     if isinstance(elog, OCEventLog):
       sub_elog, sub_content = OCELFlattener().simplify_eLog(elog, elog.file_format)
       sub_event_log_meta = MetaDataAggregator.formulate(
         object_id=None,
         object_type='CCEL',
         file_format="parquet",
-        source_filename=f"sub_log_{object_ids[0]}",
+        source_filename=f"sub_log_{event_log_meta['source_filename']}",
       )
       object_ids.append(
         self.saver.save_elog(
@@ -136,7 +136,7 @@ class GraphConstructor:
       )
     )
 
-    saved_contents = self._elog_for_inductive_mining(event_log, object_ids)
+    saved_contents = self._elog_for_inductive_mining(event_log, object_ids, event_log_meta)
     saved_contents = DeNormalizer.denormalize_for_pm4py(saved_contents)
     discoverer = DiscoveryFactory.create('CCEL')
     role_to_activities = discoverer.get_role_activities(saved_contents)
@@ -148,7 +148,7 @@ class GraphConstructor:
       object_id = None,
       object_type = 'Swimlane',
       file_format = new_swimlane.file_type,
-      source_filename=f"swimlane_{object_ids[0]}"
+      source_filename=f"swimlane_{event_log_meta['source_filename']}"
     )
     object_ids.append(
       self.saver.save_graph(
