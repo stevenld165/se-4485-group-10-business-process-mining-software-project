@@ -79,9 +79,9 @@ export function useProcessFile(): UseProcessFileReturn {
         return null
       }
 
-      const blob = await response.blob()  // for debugging: raw response body as file
-      const text = await blob.text()          // for debugging: raw response body as text
-      const json = JSON.parse(text)                    // for debugging: re-parse to verify it's valid JSON
+      const blob = await response.blob()  
+      const text = await blob.text()          
+      const json = JSON.parse(text)                    
       const parsed = _parseBackendResponse(json)
       setResult(parsed)
       return parsed

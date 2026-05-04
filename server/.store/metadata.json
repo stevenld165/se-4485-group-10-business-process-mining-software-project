@@ -218,5 +218,65 @@
     "bundle_id": "e6339345-691d-40f1-8ee3-d623f82b125f",
     "attached_to": null,
     "storage_subdir": "BPMN"
+  },
+  "e891068a-fc41-4963-93c1-42428dbb4ff5": {
+    "id": "e891068a-fc41-4963-93c1-42428dbb4ff5",
+    "type": "CCEL",
+    "format": "parquet",
+    "source_file": "HR_Onboarding_WITH_BRANCHES_AND_LOOPS.csv",
+    "created_at": "2026-05-04T02:53:32.460789",
+    "bundle_id": "83bdc0c1-290c-4cab-89d9-ca33e8ccbeda",
+    "attached_to": null,
+    "storage_subdir": "CCEL"
+  },
+  "f37a002a-4f79-437d-aac0-a337e7d4f671": {
+    "id": "f37a002a-4f79-437d-aac0-a337e7d4f671",
+    "type": "Swimlane",
+    "format": "bpmn",
+    "source_file": "swimlane_e891068a-fc41-4963-93c1-42428dbb4ff5",
+    "created_at": "2026-05-04T02:53:32.758058",
+    "bundle_id": "83bdc0c1-290c-4cab-89d9-ca33e8ccbeda",
+    "attached_to": null,
+    "storage_subdir": "BPMN"
+  },
+  "1a824fb7-6ec4-4ad4-9efb-c8ac6a503eb6": {
+    "id": "1a824fb7-6ec4-4ad4-9efb-c8ac6a503eb6",
+    "type": "CCEL",
+    "format": "parquet",
+    "source_file": "HR_Onboarding_WITH_BRANCHES_AND_LOOPS.csv",
+    "created_at": "2026-05-04T03:12:56.723771",
+    "bundle_id": "ca7e3f4e-193c-4ad2-bf9b-8828b450231d",
+    "attached_to": null,
+    "storage_subdir": "CCEL"
+  },
+  "e4bff0ca-2b08-4b92-a1d9-639cc1fee96a": {
+    "id": "e4bff0ca-2b08-4b92-a1d9-639cc1fee96a",
+    "type": "Swimlane",
+    "format": "bpmn",
+    "source_file": "swimlane_1a824fb7-6ec4-4ad4-9efb-c8ac6a503eb6",
+    "created_at": "2026-05-04T03:12:56.760776",
+    "bundle_id": "ca7e3f4e-193c-4ad2-bf9b-8828b450231d",
+    "attached_to": null,
+    "storage_subdir": "BPMN"
+  },
+  "1665047a-80b4-41ff-a936-3123a9e62606": {
+    "id": "1665047a-80b4-41ff-a936-3123a9e62606",
+    "type": "CCEL",
+    "format": "parquet",
+    "source_file": "HR_Onboarding_WITH_BRANCHES_AND_LOOPS.csv",
+    "created_at": "2026-05-04T18:37:50.565468",
+    "bundle_id": "18154dc4-2833-4806-8e7a-75e21a996a6c",
+    "attached_to": null,
+    "storage_subdir": "CCEL"
+  },
+  "b6eca12f-a95e-4f11-897e-36eb24a0eac8": {
+    "id": "b6eca12f-a95e-4f11-897e-36eb24a0eac8",
+    "type": "Swimlane",
+    "format": "bpmn",
+    "source_file": "swimlane_1665047a-80b4-41ff-a936-3123a9e62606",
+    "created_at": "2026-05-04T18:37:50.755561",
+    "bundle_id": "18154dc4-2833-4806-8e7a-75e21a996a6c",
+    "attached_to": null,
+    "storage_subdir": "BPMN"
   }
 }

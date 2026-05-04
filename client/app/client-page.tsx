@@ -2,13 +2,13 @@
 
 import Image from "next/image"
 import { useRef, useState } from "react"
-import { columns } from "./event-logs/columns"
 import { useProcessFile } from "./hooks/useProcessFile"
 import UploadSection from "./sections/UploadSection"
 import EventLogSection from "./sections/EventLogSection"
 import {BpmnViewerHandle} from "@/components/BpmnViewer"
 import { useUploadHistory, UploadRecord } from "./hooks/useUploadhistory"
 import UploadHistorySection from "./sections/UploadHistorySection"
+import ErrorModal from "@/components/ErrorModal"
 
 import OverviewSection from "./sections/OverviewSection"
 import styles from "./ClientPage.module.css"
@@ -18,11 +18,12 @@ type Section = "overview" | "eventlog" | "bpmn" | "history"
 export default function ClientPage() {
   const { result, isLoading, error, processFile, loadFromRecord, clearError } =
     useProcessFile()
-  const {history, addRecord, removeRecord, clearHistory} = useUploadHistory()
+  const {history, addRecord, removeRecord, clearHistory, mounted} = useUploadHistory()
   const [activeSection, setActiveSection] = useState<Section>("overview") 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [isUploadOpen, setIsUploadOpen] = useState(false)
   const [bpmnMaximized, setBpmnMaximized] = useState(false)
+  
 
   const viewerRef = useRef<BpmnViewerHandle | null>(null)
   //-----Handlers --------------------------------------------------------------------------------
@@ -72,23 +73,7 @@ export default function ClientPage() {
           onClose={() => setIsUploadOpen(false)}
         />
 
-        {error && (
-            <div className={styles.errorOverlay}>
-              <div className={styles.errorModal}>
-                <div className={styles.errorModalIcon}>⚠️</div>
-                  <h3 className={styles.errorModalTitle}>
-                    {error.kind === "unsupported_format" && "Unsupported File Format"}
-                    {error.kind === "invalid_structure" && "Invalid Event Log Structure"}
-                    {error.kind === "processing_error" && "Processing Error"}
-                    {error.kind === "network_error" && "Connection Error"}
-                  </h3>
-                  <p className={styles.errorModalMessage}>{error.message}</p>
-                  <button className={styles.errorModalBtn} onClick={clearError}>
-                    Close
-                  </button>
-              </div>
-          </div>
-        )}
+        <ErrorModal error={error?.message ?? null} onClose={clearError} />
 
         {/*Sidebar */}
         <nav className={`${styles.sidebar} ${sidebarCollapsed ? styles.sidebarCollapsed : ""}`}>
@@ -140,10 +125,11 @@ export default function ClientPage() {
             <svg className={styles.sidebarIcon} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
               <circle cx="8" cy="8" r="5.5" /><path d="M8 5v3.5l2 2" />
             </svg>
+
             {!sidebarCollapsed && (
               <span className={styles.sidebarItemInner}>
                 Upload history
-                {history.length > 0 && <span className={styles.badge}>{history.length}</span>}
+                {mounted && history.length > 0 && <span className={styles.badge}>{history.length}</span>}
               </span>
             )}
           </button>
@@ -210,14 +196,15 @@ export default function ClientPage() {
           </div>
 
           {/*Upload History - active when on upload history */}
-         {/* <div className={`${styles.page} ${activeSection === "history" ? styles.pageActive : ""}`}>
+         {<div className={`${styles.page} ${activeSection === "history" ? styles.pageActive : ""}`}>
             <UploadHistorySection
               history={history}
               onLoad={handleLoadRecord}
               onDelete={removeRecord}
               onClear={clearHistory}
+              mounted={mounted}
             />
-          </div> */}
+          </div> }
         </main>
 
       </div>

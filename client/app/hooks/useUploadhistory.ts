@@ -41,6 +41,7 @@ export function useUploadHistory() {
   }, [history])
 
   useEffect(() => {
+    setHistory(loadHistory())
     setMounted(true)
   }, [])
 

@@ -5,6 +5,8 @@ import { useState } from "react"
 import { Button } from "./ui/button"
 import { Field, FieldDescription } from "./ui/field"
 import { Input } from "./ui/input"
+import ErrorModal from "./ErrorModal"
+import { useErrorModal } from "@/app/hooks/UseErrormodal"
 
 interface FileInputProps {
   onFileSubmit: (file: File) => void
@@ -22,21 +24,21 @@ const ACCEPTED_MIME_TYPES = [
 
 export default function FileInput({ onFileSubmit }: FileInputProps) {
   const [file, setFile] = useState<File | undefined>()
-  const [error, setError] = useState<string | null>(null)
+  const {error, showError, clearError} = useErrorModal()
 
   const handleSubmit = () => {
     if (!file) {
-      setError("Please select a file before submitting.")
+      showError("Please select a file before submitting.")
       return
     }
 
     const extension = file.name.split(".").pop()?.toLowerCase()
     if (!extension || !ACCEPTED_EXTENSIONS.includes(extension)) {
-      setError(`Unsupported file type. Please upload a .csv, .json, or .xml file.`)
+      showError(`Unsupported file type. Please upload a .csv, .json, or .xml file.`)
       return
     }
 
-    setError(null)
+    showError(null)
     onFileSubmit(file)
   }
 
@@ -50,7 +52,7 @@ export default function FileInput({ onFileSubmit }: FileInputProps) {
           accept={`.csv,.json,.xml,${ACCEPTED_MIME_TYPES}`}
           className={styles.fileInput}
           onChange={(e) => {
-            setError(null)
+            showError(null)
             if (e.target.files && e.target.files.length > 0)
               setFile(e.target.files[0])
           }}
@@ -60,10 +62,8 @@ export default function FileInput({ onFileSubmit }: FileInputProps) {
         </FieldDescription>
       </Field>
 
-      {error && (
-        <p style={{ color: "#c53030", fontSize: "0.875rem" }}>{error}</p>
-      )}
-
+      <ErrorModal error={error} onClose={clearError} />
+ 
       <Button onClick={handleSubmit}>Submit</Button>
     </div>
   )

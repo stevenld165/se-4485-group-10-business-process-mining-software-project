@@ -8,6 +8,7 @@ interface UploadHistorySectionProps {
   onLoad: (record: UploadRecord) => void
   onDelete: (id: string) => void
   onClear: () => void
+  mounted: boolean
 }
 
 function formatBytes(bytes: number): string {
@@ -17,7 +18,7 @@ function formatBytes(bytes: number): string {
 }
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleString(undefined, {
+  return new Date(iso).toLocaleString("en-GB", {
     dateStyle: "medium",
     timeStyle: "short",
   })
@@ -28,6 +29,7 @@ export default function UploadHistorySection({
   onLoad,
   onDelete,
   onClear,
+  mounted,
 }: UploadHistorySectionProps) {
   return (
     <div className={styles.wrapper}>
@@ -38,14 +40,14 @@ export default function UploadHistorySection({
             Previously uploaded event logs — click one to restore it
           </p>
         </div>
-        {history.length > 0 && (
+        {mounted && history.length > 0 && (
           <button className={styles.clearBtn} onClick={onClear}>
             Clear all
           </button>
         )}
       </div>
 
-      {history.length === 0 ? (
+      {!mounted || history.length === 0 ? (
         <div className={styles.empty}>
           <svg
             className={styles.emptyIcon}
