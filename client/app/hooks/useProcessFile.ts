@@ -116,21 +116,11 @@ function _parseBackendResponse(json: any): ProcessResult {
 
   return {
     bundleId: json.bundle_id ?? "",
-    bpmnXml: _injectRoleMap(swimlaneRaw, roles),
+    bpmnXml: swimlaneRaw,
     ccelData: _normaliseRows(ccelRaw),
     ocelData: ocelRaw ? _normaliseRows(ocelRaw) : null,
     roles,
   }
-}
-
-/**
- * Embed the role→activities map directly into the BPMN XML as a
- * data-role-map attribute so BpmnViewer can read it without extra props.
- */
-function _injectRoleMap(xml: string, roles: Record<string, string[]>): string {
-  if (!xml || Object.keys(roles).length === 0) return xml
-  const encoded = JSON.stringify(roles).replace(/"/g, "&quot;")
-  return xml.replace(/<bpmn:process /i, `<bpmn:process data-role-map="${encoded}" `)
 }
 
 /**

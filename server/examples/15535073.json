@@ -1,0 +1,374 @@
+{
+  "access": {
+    "embargo": {
+      "active": false,
+      "reason": null
+    },
+    "files": "public",
+    "record": "public",
+    "status": "open"
+  },
+  "created": "2025-05-28T11:34:08.775088+00:00",
+  "custom_fields": {},
+  "deletion_status": {
+    "is_deleted": false,
+    "status": "P"
+  },
+  "files": {
+    "count": 10,
+    "enabled": true,
+    "entries": {
+      "01_generate_simulation.py": {
+        "access": {
+          "hidden": false
+        },
+        "checksum": "md5:65d625b15d1d353ba8ee26b7292b1f19",
+        "ext": "py",
+        "id": "f2f3509f-1d18-4096-91a1-a3022934ca05",
+        "key": "01_generate_simulation.py",
+        "links": {
+          "content": "https://zenodo.org/api/records/15535073/files/01_generate_simulation.py/content",
+          "self": "https://zenodo.org/api/records/15535073/files/01_generate_simulation.py"
+        },
+        "metadata": {},
+        "mimetype": "text/x-python",
+        "size": 23735,
+        "storage_class": "L"
+      },
+      "02_database_to_ocel_csv.py": {
+        "access": {
+          "hidden": false
+        },
+        "checksum": "md5:37811384311fc8aa869681f8559710f8",
+        "ext": "py",
+        "id": "c17617fc-d1b3-4775-b049-f514774272f1",
+        "key": "02_database_to_ocel_csv.py",
+        "links": {
+          "content": "https://zenodo.org/api/records/15535073/files/02_database_to_ocel_csv.py/content",
+          "self": "https://zenodo.org/api/records/15535073/files/02_database_to_ocel_csv.py"
+        },
+        "metadata": {},
+        "mimetype": "text/x-python",
+        "size": 6677,
+        "storage_class": "L"
+      },
+      "03_ocel_csv_to_ocel.py": {
+        "access": {
+          "hidden": false
+        },
+        "checksum": "md5:722f60edcbdaf10f5799c237de3a83eb",
+        "ext": "py",
+        "id": "baa98516-acb5-4f10-8ff7-97a60d96b17b",
+        "key": "03_ocel_csv_to_ocel.py",
+        "links": {
+          "content": "https://zenodo.org/api/records/15535073/files/03_ocel_csv_to_ocel.py/content",
+          "self": "https://zenodo.org/api/records/15535073/files/03_ocel_csv_to_ocel.py"
+        },
+        "metadata": {},
+        "mimetype": "text/x-python",
+        "size": 144,
+        "storage_class": "L"
+      },
+      "04_postprocess_activities.py": {
+        "access": {
+          "hidden": false
+        },
+        "checksum": "md5:a06d34a20f66319485588a4ed0dd2048",
+        "ext": "py",
+        "id": "6f506c5e-043f-4397-99bc-3a2542d4aa74",
+        "key": "04_postprocess_activities.py",
+        "links": {
+          "content": "https://zenodo.org/api/records/15535073/files/04_postprocess_activities.py/content",
+          "self": "https://zenodo.org/api/records/15535073/files/04_postprocess_activities.py"
+        },
+        "metadata": {},
+        "mimetype": "text/x-python",
+        "size": 11479,
+        "storage_class": "L"
+      },
+      "05_ocel_csv_to_ocel.py": {
+        "access": {
+          "hidden": false
+        },
+        "checksum": "md5:aaa500bac7bdd5e1713ba6ed08e89fe7",
+        "ext": "py",
+        "id": "c7b99f23-e875-4da4-a200-bf7565893369",
+        "key": "05_ocel_csv_to_ocel.py",
+        "links": {
+          "content": "https://zenodo.org/api/records/15535073/files/05_ocel_csv_to_ocel.py/content",
+          "self": "https://zenodo.org/api/records/15535073/files/05_ocel_csv_to_ocel.py"
+        },
+        "metadata": {},
+        "mimetype": "text/x-python",
+        "size": 3061,
+        "storage_class": "L"
+      },
+      "inventory_management.db": {
+        "access": {
+          "hidden": false
+        },
+        "checksum": "md5:ee1659898d4e2130cf0ee105099e32ca",
+        "ext": "db",
+        "id": "d2f045d7-39f6-4608-9b14-05ef410f433e",
+        "key": "inventory_management.db",
+        "links": {
+          "content": "https://zenodo.org/api/records/15535073/files/inventory_management.db/content",
+          "self": "https://zenodo.org/api/records/15535073/files/inventory_management.db"
+        },
+        "metadata": {},
+        "mimetype": "application/octet-stream",
+        "size": 249856,
+        "storage_class": "L"
+      },
+      "ocel_inventory_management.csv": {
+        "access": {
+          "hidden": false
+        },
+        "checksum": "md5:99a7d8ce9f7d8037897d2928126dca08",
+        "ext": "csv",
+        "id": "dae19d9e-c662-4f4f-8ea8-550af0619ae4",
+        "key": "ocel_inventory_management.csv",
+        "links": {
+          "content": "https://zenodo.org/api/records/15535073/files/ocel_inventory_management.csv/content",
+          "self": "https://zenodo.org/api/records/15535073/files/ocel_inventory_management.csv"
+        },
+        "metadata": {},
+        "mimetype": "text/csv",
+        "size": 149675,
+        "storage_class": "L"
+      },
+      "ocel_inventory_management.xml": {
+        "access": {
+          "hidden": false
+        },
+        "checksum": "md5:f51060242573a36b6e3f20df58fdc8d1",
+        "ext": "xml",
+        "id": "5c36144e-6201-4c9a-bc9f-26b020539091",
+        "key": "ocel_inventory_management.xml",
+        "links": {
+          "content": "https://zenodo.org/api/records/15535073/files/ocel_inventory_management.xml/content",
+          "self": "https://zenodo.org/api/records/15535073/files/ocel_inventory_management.xml"
+        },
+        "metadata": {},
+        "mimetype": "text/xml",
+        "size": 840656,
+        "storage_class": "L"
+      },
+      "post_ocel_inventory_management.csv": {
+        "access": {
+          "hidden": false
+        },
+        "checksum": "md5:fee3959b31b2b1981b66f0ea727d81af",
+        "ext": "csv",
+        "id": "547149cf-d2c6-4af1-b747-bb092396f998",
+        "key": "post_ocel_inventory_management.csv",
+        "links": {
+          "content": "https://zenodo.org/api/records/15535073/files/post_ocel_inventory_management.csv/content",
+          "self": "https://zenodo.org/api/records/15535073/files/post_ocel_inventory_management.csv"
+        },
+        "metadata": {},
+        "mimetype": "text/csv",
+        "size": 512068,
+        "storage_class": "L"
+      },
+      "post_ocel_inventory_management.xml": {
+        "access": {
+          "hidden": false
+        },
+        "checksum": "md5:71d4cf7d60bcc6d8138951f62135fc75",
+        "ext": "xml",
+        "id": "43047c00-096c-457e-935d-897c259da3c9",
+        "key": "post_ocel_inventory_management.xml",
+        "links": {
+          "content": "https://zenodo.org/api/records/15535073/files/post_ocel_inventory_management.xml/content",
+          "self": "https://zenodo.org/api/records/15535073/files/post_ocel_inventory_management.xml"
+        },
+        "metadata": {},
+        "mimetype": "text/xml",
+        "size": 3984223,
+        "storage_class": "L"
+      }
+    },
+    "order": [],
+    "total_bytes": 5781574
+  },
+  "id": "15535073",
+  "is_draft": false,
+  "is_published": true,
+  "links": {
+    "access": "https://zenodo.org/api/records/15535073/access",
+    "access_grants": "https://zenodo.org/api/records/15535073/access/grants",
+    "access_links": "https://zenodo.org/api/records/15535073/access/links",
+    "access_request": "https://zenodo.org/api/records/15535073/access/request",
+    "access_users": "https://zenodo.org/api/records/15535073/access/users",
+    "archive": "https://zenodo.org/api/records/15535073/files-archive",
+    "archive_media": "https://zenodo.org/api/records/15535073/media-files-archive",
+    "communities": "https://zenodo.org/api/records/15535073/communities",
+    "communities-suggestions": "https://zenodo.org/api/records/15535073/communities-suggestions",
+    "doi": "https://doi.org/10.5281/zenodo.15535073",
+    "draft": "https://zenodo.org/api/records/15535073/draft",
+    "file_modification": "https://zenodo.org/api/records/15535073/file-modification",
+    "files": "https://zenodo.org/api/records/15535073/files",
+    "latest": "https://zenodo.org/api/records/15535073/versions/latest",
+    "latest_html": "https://zenodo.org/records/15535073/latest",
+    "media_files": "https://zenodo.org/api/records/15535073/media-files",
+    "parent": "https://zenodo.org/api/records/15515787",
+    "parent_doi": "https://doi.org/10.5281/zenodo.15515787",
+    "parent_doi_html": "https://zenodo.org/doi/10.5281/zenodo.15515787",
+    "parent_html": "https://zenodo.org/records/15515787",
+    "preview_html": "https://zenodo.org/records/15535073?preview=1",
+    "quota_increase": "https://zenodo.org/api/records/15535073/quota-increase",
+    "request_deletion": "https://zenodo.org/api/records/15535073/request-deletion",
+    "requests": "https://zenodo.org/api/records/15535073/requests",
+    "reserve_doi": "https://zenodo.org/api/records/15535073/draft/pids/doi",
+    "self": "https://zenodo.org/api/records/15535073",
+    "self_doi": "https://doi.org/10.5281/zenodo.15535073",
+    "self_doi_html": "https://zenodo.org/doi/10.5281/zenodo.15535073",
+    "self_html": "https://zenodo.org/records/15535073",
+    "self_iiif_manifest": "https://zenodo.org/api/iiif/record:15535073/manifest",
+    "self_iiif_sequence": "https://zenodo.org/api/iiif/record:15535073/sequence/default",
+    "versions": "https://zenodo.org/api/records/15535073/versions"
+  },
+  "media_files": {
+    "count": 0,
+    "enabled": false,
+    "entries": {},
+    "order": [],
+    "total_bytes": 0
+  },
+  "metadata": {
+    "creators": [
+      {
+        "person_or_org": {
+          "family_name": "Berti",
+          "given_name": "Alessandro",
+          "identifiers": [
+            {
+              "identifier": "0000-0002-3279-4795",
+              "scheme": "orcid"
+            }
+          ],
+          "name": "Berti, Alessandro",
+          "type": "personal"
+        }
+      }
+    ],
+    "description": "<div dir=\"auto\"><a href=\"https://github.com/fit-alessandro-berti/inventory-management-simulation#simulated-inventory-management-database-and-object-centric-event-logs-for-process-analysis\"></a></div>\n<p dir=\"auto\"><strong>Abstract:</strong>&nbsp;This repository/dataset provides a suite of Python scripts to generate a simulated relational database for inventory management processes and transform this data into object-centric event logs (OCEL) suitable for advanced process mining analysis. The primary goal is to offer a synthetic yet realistic dataset that facilitates research, development, and application of object-centric process mining techniques in the domain of inventory control and supply chain management. The generated event logs capture common inventory operations, track stock level changes, and are enriched with key inventory management parameters (like EOQ, Safety Stock, Reorder Point) and status-based activity labels (e.g., indicating understock or overstock situations).</p>\n<p dir=\"auto\"><strong>Overview:</strong>&nbsp;Inventory management is a critical business process characterized by the interaction of various entities such as materials, purchase orders, sales orders, plants, suppliers, and customers. Traditional process mining often struggles to capture these complex interactions. Object-Centric Process Mining (OCPM) offers a more suitable paradigm. This project provides the tools to create and explore such data.</p>\n<p dir=\"auto\">The workflow involves:</p>\n<ol>\n<li><strong>Database Simulation:</strong>&nbsp;Generating a SQLite database with tables for materials, sales orders, purchase orders, goods movements, stock levels, etc., populated with simulated data.</li>\n<li><strong>Initial OCEL Generation:</strong>&nbsp;Extracting data from the SQLite database and structuring it as an object-centric event log (in CSV format). This log includes activities like \"Create Purchase Order Item\", \"Goods Receipt\", \"Create Sales Order Item\", \"Goods Issue\", and tracks running stock levels for materials.</li>\n<li><strong>OCEL Post-processing and Enrichment:</strong>\n<ul>\n<li>Calculating standard inventory management metrics such as Economic Order Quantity (EOQ), Safety Stock (SS), and Reorder Point (ROP) for each material-plant combination based on the simulated historical data.</li>\n<li>Merging these metrics into the event log.</li>\n<li>Enhancing activity labels to include the current stock status (e.g., \"Understock\", \"Overstock\", \"Normal\") relative to calculated SS and Overstock (OS) levels (where OS = SS + EOQ).</li>\n<li>Generating new, distinct events to explicitly mark the moments when stock statuses change (e.g., \"START UNDERSTOCK\", \"ST CHANGE NORMAL to OVERSTOCK\", \"END NORMAL\").</li>\n</ul>\n</li>\n<li><strong>Format Conversion:</strong>&nbsp;Converting the CSV-based OCELs into the standard OCEL XML/OCEL2 format using the&nbsp;<code>pm4py</code>&nbsp;library.</li>\n</ol>\n<p dir=\"auto\"><strong>Contents:</strong></p>\n<p dir=\"auto\">The repository contains the following Python scripts:</p>\n<ul>\n<li>\n<p dir=\"auto\"><strong><code>01_generate_simulation.py</code></strong>:</p>\n<ul>\n<li>Creates a SQLite database named&nbsp;<code>inventory_management.db</code>.</li>\n<li>Defines and populates tables including:&nbsp;<code>Materials</code>,&nbsp;<code>SalesOrderDocuments</code>,&nbsp;<code>SalesOrderItems</code>,&nbsp;<code>PurchaseOrderDocuments</code>,&nbsp;<code>PurchaseOrderItems</code>,&nbsp;<code>PurchaseRequisitions</code>,&nbsp;<code>GoodsReceiptsAndIssues</code>,&nbsp;<code>MaterialStocks</code>,&nbsp;<code>MaterialDocuments</code>,&nbsp;<code>SalesDocumentFlows</code>, and&nbsp;<code>OrderSuggestions</code>.</li>\n<li>Simulates data for a configurable number of materials, customers, sales, purchases, etc., with randomized dates and quantities.</li>\n</ul>\n</li>\n<li>\n<p dir=\"auto\"><strong><code>02_database_to_ocel_csv.py</code></strong>:</p>\n<ul>\n<li>Connects to the&nbsp;<code>inventory_management.db</code>.</li>\n<li>Executes a SQL query to extract relevant events and their associated objects for inventory processes.</li>\n<li>Constructs an initial object-centric event log, saved as&nbsp;<code>ocel_inventory_management.csv</code>.</li>\n<li>Identified object types include:&nbsp;<code>MAT</code>&nbsp;(Material),&nbsp;<code>PLA</code>&nbsp;(Plant),&nbsp;<code>PO_ITEM</code>&nbsp;(Purchase Order Item),&nbsp;<code>SO_ITEM</code>&nbsp;(Sales Order Item),&nbsp;<code>CUSTOMER</code>,&nbsp;<code>SUPPLIER</code>.</li>\n<li>Calculates \"Stock Before\" and \"Stock After\" for each event affecting material stock.</li>\n<li>Standardizes column names to OCEL conventions (e.g.,&nbsp;<code>ocel:activity</code>,&nbsp;<code>ocel:timestamp</code>,&nbsp;<code>ocel:type:&lt;OBJECT_TYPE&gt;</code>).</li>\n</ul>\n</li>\n<li>\n<p dir=\"auto\"><strong><code>03_ocel_csv_to_ocel.py</code></strong>:</p>\n<ul>\n<li>Reads&nbsp;<code>ocel_inventory_management.csv</code>.</li>\n<li>Uses&nbsp;<code>pm4py</code>&nbsp;to convert the CSV event log into the standard OCEL XML format (<code>ocel_inventory_management.xml</code>).</li>\n</ul>\n</li>\n<li>\n<p dir=\"auto\"><strong><code>04_postprocess_activities.py</code></strong>:</p>\n<ul>\n<li>Reads data from&nbsp;<code>inventory_management.db</code>&nbsp;to calculate inventory parameters:\n<ul>\n<li>Annual Demand (Dm)</li>\n<li>Average Daily Demand (dm)</li>\n<li>Standard Deviation of Daily Demand (&sigma;m)</li>\n<li>Average Lead Time (lm)</li>\n<li>Economic Order Quantity (EOQ):&nbsp;(2&sdot;Dm&sdot;S)/H&nbsp;(where S is fixed order cost, H is holding cost)</li>\n<li>Safety Stock (SS):&nbsp;z&sdot;&sigma;m&sdot;lm&nbsp;(where z is the z-score for the desired service level)</li>\n<li>Reorder Point (ROP):&nbsp;(dm&sdot;lm)+SS</li>\n</ul>\n</li>\n<li>Merges these calculated parameters with&nbsp;<code>ocel_inventory_management.csv</code>.</li>\n<li>Computes an Overstock level (OS) as&nbsp;SS+EOQ.</li>\n<li>Derives a \"Current Status\" (Understock, Overstock, Normal) for each event based on \"Stock After\" relative to SS and OS.</li>\n<li>Appends this status to the&nbsp;<code>ocel:activity</code>&nbsp;label (e.g., \"Goods Issue (Understock)\").</li>\n<li>Generates new events for status changes (e.g., \"START NORMAL\", \"ST CHANGE UNDERSTOCK to NORMAL\", \"END OVERSTOCK\") with adjusted timestamps to precisely mark these transitions.</li>\n<li>Creates a new object type&nbsp;<code>MAT_PLA</code>&nbsp;(Material-Plant combination) for easier status tracking.</li>\n<li>Saves the enriched and transformed log as&nbsp;<code>post_ocel_inventory_management.csv</code>.</li>\n</ul>\n</li>\n<li>\n<p dir=\"auto\"><strong><code>05_ocel_csv_to_ocel.py</code></strong>:</p>\n<ul>\n<li>Reads the post-processed&nbsp;<code>post_ocel_inventory_management.csv</code>.</li>\n<li>Uses&nbsp;<code>pm4py</code>&nbsp;to convert this enriched CSV event log into the standard OCEL XML format (<code>post_ocel_inventory_management.xml</code>).</li>\n</ul>\n</li>\n</ul>\n<p dir=\"auto\"><strong>Generated Dataset Files (if included, or can be generated using the scripts):</strong></p>\n<ul>\n<li><code>inventory_management.db</code>: The SQLite database containing the simulated raw data.</li>\n<li><code>ocel_inventory_management.csv</code>: The initial OCEL in CSV format.</li>\n<li><code>ocel_inventory_management.xml</code>: The initial OCEL in standard OCEL XML format.</li>\n<li><code>post_ocel_inventory_management.csv</code>: The post-processed and enriched OCEL in CSV format.</li>\n<li><code>post_ocel_inventory_management.xml</code>: The post-processed and enriched OCEL in standard OCEL XML format.</li>\n</ul>\n<p dir=\"auto\"><strong>How to Use:</strong></p>\n<ol>\n<li>Ensure you have Python installed along with the following libraries:&nbsp;<code>sqlite3</code>&nbsp;(standard library),&nbsp;<code>pandas</code>,&nbsp;<code>numpy</code>,&nbsp;<code>pm4py</code>.</li>\n<li>Run the scripts sequentially in a terminal or command prompt:\n<ul>\n<li><code>python 01_generate_simulation.py</code>&nbsp;(generates&nbsp;<code>inventory_management.db</code>)</li>\n<li><code>python 02_database_to_ocel_csv.py</code>&nbsp;(generates&nbsp;<code>ocel_inventory_management.csv</code>&nbsp;from the database)</li>\n<li><code>python 03_ocel_csv_to_ocel.py</code>&nbsp;(generates&nbsp;<code>ocel_inventory_management.xml</code>)</li>\n<li><code>python 04_postprocess_activities.py</code>&nbsp;(generates&nbsp;<code>post_ocel_inventory_management.csv</code>&nbsp;using the database and the initial CSV OCEL)</li>\n<li><code>python 05_ocel_csv_to_ocel.py</code>&nbsp;(generates&nbsp;<code>post_ocel_inventory_management.xml</code>)</li>\n</ul>\n</li>\n</ol>\n<p dir=\"auto\"><strong>Potential Applications and Research:</strong>&nbsp;This dataset and the accompanying scripts can be used for:</p>\n<ul>\n<li>Applying and evaluating object-centric process mining algorithms on inventory management data.</li>\n<li>Analyzing inventory dynamics, such as the causes and effects of understocking or overstocking.</li>\n<li>Discovering and conformance checking process models that involve multiple interacting objects (materials, orders, plants).</li>\n<li>Investigating the impact of different inventory control parameters (EOQ, SS, ROP) on process execution.</li>\n<li>Developing educational materials for teaching OCPM in a supply chain context.</li>\n<li>Serving as a benchmark for new OCEL-based analysis techniques.</li>\n</ul>\n<p dir=\"auto\"><strong>Keywords:</strong> Object-Centric Event Log, OCEL, Process Mining, Inventory Management, Supply Chain, Simulation, Synthetic Data, SQLite, Python, pandas, pm4py, Economic Order Quantity (EOQ), Safety Stock (SS), Reorder Point (ROP), Stock Status Analysis.</p>",
+    "publication_date": "2025-05-28",
+    "publisher": "Zenodo",
+    "resource_type": {
+      "id": "dataset",
+      "title": {
+        "de": "Datensatz",
+        "en": "Dataset"
+      }
+    },
+    "rights": [
+      {
+        "description": {
+          "en": "The Creative Commons Attribution license allows re-distribution and re-use of a licensed work on the condition that the creator is appropriately credited."
+        },
+        "icon": "cc-by-icon",
+        "id": "cc-by-4.0",
+        "props": {
+          "scheme": "spdx",
+          "url": "https://creativecommons.org/licenses/by/4.0/legalcode"
+        },
+        "title": {
+          "en": "Creative Commons Attribution 4.0 International"
+        }
+      }
+    ],
+    "title": "Simulated Inventory Management Database and Object-Centric Event Logs for Process Analysis"
+  },
+  "parent": {
+    "access": {
+      "owned_by": {
+        "user": "571626"
+      },
+      "settings": {
+        "accept_conditions_text": null,
+        "allow_guest_requests": false,
+        "allow_user_requests": false,
+        "secret_link_expiration": 0
+      }
+    },
+    "communities": {
+      "default": "11c13954-0960-4c43-bb6e-a0b7ed5e9de7",
+      "entries": [
+        {
+          "access": {
+            "member_policy": "open",
+            "members_visibility": "public",
+            "record_submission_policy": "open",
+            "review_policy": "open",
+            "visibility": "public"
+          },
+          "children": {
+            "allow": false
+          },
+          "created": "2023-05-22T19:13:54.267832+00:00",
+          "custom_fields": {},
+          "deletion_status": {
+            "is_deleted": false,
+            "status": "P"
+          },
+          "id": "11c13954-0960-4c43-bb6e-a0b7ed5e9de7",
+          "links": {},
+          "metadata": {
+            "title": "Chair of Process and Data Science - RWTH Aachen University"
+          },
+          "revision_id": 2,
+          "slug": "rwth-pads",
+          "updated": "2024-08-21T12:14:14.725638+00:00"
+        }
+      ],
+      "ids": [
+        "11c13954-0960-4c43-bb6e-a0b7ed5e9de7"
+      ]
+    },
+    "id": "15515787",
+    "pids": {
+      "doi": {
+        "client": "datacite",
+        "identifier": "10.5281/zenodo.15515787",
+        "provider": "datacite"
+      }
+    }
+  },
+  "pids": {
+    "doi": {
+      "client": "datacite",
+      "identifier": "10.5281/zenodo.15535073",
+      "provider": "datacite"
+    },
+    "oai": {
+      "identifier": "oai:zenodo.org:15535073",
+      "provider": "oai"
+    }
+  },
+  "revision_id": 4,
+  "stats": {
+    "all_versions": {
+      "data_volume": 840457349.0,
+      "downloads": 1961,
+      "unique_downloads": 1792,
+      "unique_views": 718,
+      "views": 770
+    },
+    "this_version": {
+      "data_volume": 347507241.0,
+      "downloads": 810,
+      "unique_downloads": 740,
+      "unique_views": 265,
+      "views": 284
+    }
+  },
+  "status": "published",
+  "swh": {},
+  "updated": "2025-05-28T11:34:09.165958+00:00",
+  "versions": {
+    "index": 2,
+    "is_latest": true
+  }
+}
