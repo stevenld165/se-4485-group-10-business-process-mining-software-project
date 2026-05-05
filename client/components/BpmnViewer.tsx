@@ -63,6 +63,9 @@ function injectLanes(
   const laneSet = doc.createElementNS(BPMN, "laneSet")
   laneSet.setAttribute("id", "laneSet_1")
 
+  let currentY = 0
+  const LANE_HEIGHT = 150
+
   Object.entries(actorToActivities).forEach(([actor, activities], idx) => {
     const laneId = `lane_${actor.replace(/\s+/g, "_")}`
 
@@ -143,9 +146,10 @@ function injectLanes(
 
     const bounds = doc.createElementNS(DC, "Bounds")
     bounds.setAttribute("x", "0")
-    bounds.setAttribute("y", "0")
+    bounds.setAttribute("y", String(currentY))
     bounds.setAttribute("width", "800")
-    bounds.setAttribute("height", "150")
+    bounds.setAttribute("height", String(LANE_HEIGHT))
+    currentY += LANE_HEIGHT
     shape.appendChild(bounds)
     plane.insertBefore(shape, plane.firstChild)
   })
@@ -316,6 +320,17 @@ async function applyDagreLayout(modeler: Modeler): Promise<void> {
       // Adjust x position to maintain centering
       n.x = n.x - (oldWidth - targetWidth) / 2
     }
+  })
+
+  let laneY = 0
+  const laneSpacing = 20  // optional gap between lanes
+
+  lanes.forEach((lane: any) => {
+    const n = g2.node(lane.id)
+    if (!n) return
+
+    n.y = laneY + n.height / 2   // center-based positioning
+    laneY += n.height + laneSpacing
   })
   
   const validLaneEdges = lanes .map((lane) => {

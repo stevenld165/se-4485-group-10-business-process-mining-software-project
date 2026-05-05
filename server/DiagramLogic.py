@@ -42,6 +42,8 @@ class SwimlaneDiagram(BPMNGraph):
     self.file_location = new_location
 
   def _add_role_map(self, role_map: dict, path: Path) -> None:
+    if not role_map:
+      return
     role_map_json = json.dumps({
       role: list(activities) if isinstance(activities, set) else activities
       for role, activities in role_map.items()
