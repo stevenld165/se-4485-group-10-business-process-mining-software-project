@@ -28,7 +28,14 @@ class CCELDiscovery(DiscoveryAlg):
     self._role_to_activities = None
 
   def discover_process(self, df: pd.DataFrame):
-    event_log = log_converter.apply(df)
+    df_augmented = df.copy()
+    if 'resource' in df_augmented.columns:
+      df_augmented['concept:name'] = (
+          df_augmented['concept:name'] +
+          ' [' + df_augmented['resource'].astype(str) + ']'
+      )
+
+    event_log = log_converter.apply(df_augmented)
     return pm4py.discover_bpmn_inductive(event_log)
 
   def get_role_activities(self, df: pd.DataFrame) -> dict:
@@ -36,11 +43,11 @@ class CCELDiscovery(DiscoveryAlg):
       return {}
 
     dominant = (
-      df.groupby(['concept:name', 'resource'])
+      df.groupby(['resource', 'concept:name'])
       .size()
       .reset_index(name='count')
-      .sort_values('count', ascending=False)
-      .drop_duplicates(subset='concept:name')  # keep top actor per activity
+      .sort_values(['resource', 'count'], ascending=[True, False])
+      .drop_duplicates(subset='resource', keep='first')  # keep top activity per resource
       .set_index('resource')['concept:name']
     )
 
