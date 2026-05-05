@@ -3,11 +3,10 @@
 import { useRef, useState, useCallback, RefObject } from "react"
 import BpmnViewer, { BpmnViewerHandle } from "@/components/BpmnViewer"
 import styles from "./OverviewSection.module.css"
-import { Entry } from "../event-logs/columns"
 import EventLogPanel from "./EventLogpanel"
 import { EventLogRow } from "../hooks/useProcessFile"
 
-interface OverviewSectionProps<TData, TValue> {
+interface OverviewSectionProps {
   ccelData: EventLogRow[]
   ocelData: EventLogRow[] | null
   xml: string
@@ -17,7 +16,7 @@ interface OverviewSectionProps<TData, TValue> {
   onBpmnMaximizedChange: (value: boolean) => void
 }
 
-export default function OverviewSection<TData extends Entry, TValue>({
+export default function OverviewSection({
   ccelData,
   ocelData,
   xml,
@@ -25,11 +24,12 @@ export default function OverviewSection<TData extends Entry, TValue>({
   viewerRef,
   bpmnMaximized,
   onBpmnMaximizedChange,
-}: OverviewSectionProps<TData, TValue>) {
+}: OverviewSectionProps) {
   const [leftPercent, setLeftPercent] = useState(35)
   const containerRef = useRef<HTMLDivElement>(null)
   const dragging = useRef(false)
   const [selectedActivity, setSelectedActivity] = useState<string | null>(null)
+  const [selectedRowIndex, setSelectedRowIndex] = useState<EventLogRow | null>(null)
 
   const onPointerDown = useCallback((e: React.PointerEvent) => {
     e.preventDefault()
@@ -51,9 +51,23 @@ export default function OverviewSection<TData extends Entry, TValue>({
   }, [])
 
   const handleRowClick = (row: EventLogRow) => {
-    const activity = row["activity"] as string ?? null
-    const next = selectedActivity === activity ? null : activity
+    const activityKey = Object.keys(row).find((key) => key.toLowerCase().includes("activity"))
+    const activity = activityKey ? String(row[activityKey]) : null
+    if (selectedRowIndex === row) {
+      setSelectedActivity(null)
+      setSelectedRowIndex(null)
+      viewerRef.current?.highlightActivity(null)
+    }else {
+      setSelectedActivity(activity)
+      setSelectedRowIndex(row)
+      viewerRef.current?.highlightActivity(activity)
+    }
+  }
+
+  const handleDiagramClick = (activityName: string) => {
+    const next = selectedActivity === activityName ? null : activityName
     setSelectedActivity(next)
+    setSelectedRowIndex(null)
     viewerRef.current?.highlightActivity(next)
   }
 
@@ -101,6 +115,8 @@ export default function OverviewSection<TData extends Entry, TValue>({
                         <EventLogPanel
                           data={ocelData}
                           onRowClick={handleRowClick}
+                          selectedActivity={selectedActivity}
+                          selectedRowIndex={selectedRowIndex}
                         />
                       </div>
                     </div>
@@ -115,6 +131,8 @@ export default function OverviewSection<TData extends Entry, TValue>({
                         <EventLogPanel
                           data={ccelData}
                           onRowClick={handleRowClick}
+                          selectedActivity={selectedActivity}
+                          selectedRowIndex={selectedRowIndex}
                         />
                       </div>
                     </div>
@@ -126,6 +144,8 @@ export default function OverviewSection<TData extends Entry, TValue>({
                       <EventLogPanel
                         data={ccelData}
                         onRowClick={handleRowClick}
+                        selectedActivity={selectedActivity}
+                        selectedRowIndex={selectedRowIndex}
                       />
                     </div>
                   </div>
@@ -156,7 +176,11 @@ export default function OverviewSection<TData extends Entry, TValue>({
             </span>
           </div>
           <div className={styles.panelBody}>
-            <BpmnViewer xml={xml} ref={viewerRef} />
+            <BpmnViewer 
+            xml={xml} 
+            ref={viewerRef}
+            onNodeClick={handleDiagramClick}
+            />
           </div>
         </div>
 

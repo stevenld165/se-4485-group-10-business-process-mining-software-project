@@ -408,5 +408,75 @@
     "bundle_id": "f54dc38c-230e-4221-9d33-18307a66f836",
     "attached_to": null,
     "storage_subdir": "BPMN"
+  },
+  "b9eb8b2e-f875-44ef-b83c-a5b4f0b3b19e": {
+    "id": "b9eb8b2e-f875-44ef-b83c-a5b4f0b3b19e",
+    "type": "CCEL",
+    "format": "parquet",
+    "source_file": "HR_Onboarding_WITH_BRANCHES_AND_LOOPS.csv",
+    "created_at": "2026-05-05T20:11:15.584558",
+    "bundle_id": "2d798a9c-7c03-47dc-b1f9-e4d40ccd0bca",
+    "attached_to": null,
+    "storage_subdir": "CCEL"
+  },
+  "150fc4be-51a2-4e3a-be14-a06bc756aa85": {
+    "id": "150fc4be-51a2-4e3a-be14-a06bc756aa85",
+    "type": "Swimlane",
+    "format": "bpmn",
+    "source_file": "swimlane_b9eb8b2e-f875-44ef-b83c-a5b4f0b3b19e",
+    "created_at": "2026-05-05T20:11:16.046511",
+    "bundle_id": "2d798a9c-7c03-47dc-b1f9-e4d40ccd0bca",
+    "attached_to": null,
+    "storage_subdir": "BPMN"
+  },
+  "6c3dae19-e4a2-4d06-b569-51b1c846898b": {
+    "id": "6c3dae19-e4a2-4d06-b569-51b1c846898b",
+    "type": "CCEL",
+    "format": "parquet",
+    "source_file": "HR_Onboarding_WITH_BRANCHES_AND_LOOPS.csv",
+    "created_at": "2026-05-05T20:20:18.534243",
+    "bundle_id": "ee3e703c-67d2-46c9-971a-e65e8e10a1fc",
+    "attached_to": null,
+    "storage_subdir": "CCEL"
+  },
+  "44b515b6-8d11-4d80-a890-273c4152c03d": {
+    "id": "44b515b6-8d11-4d80-a890-273c4152c03d",
+    "type": "Swimlane",
+    "format": "bpmn",
+    "source_file": "swimlane_6c3dae19-e4a2-4d06-b569-51b1c846898b",
+    "created_at": "2026-05-05T20:20:18.573891",
+    "bundle_id": "ee3e703c-67d2-46c9-971a-e65e8e10a1fc",
+    "attached_to": null,
+    "storage_subdir": "BPMN"
+  },
+  "6caaa234-8564-4dd4-abb5-017ee7210b31": {
+    "id": "6caaa234-8564-4dd4-abb5-017ee7210b31",
+    "type": "OCEL",
+    "format": "parquet",
+    "source_file": "HR_Onboarding_OCEL.csv",
+    "created_at": "2026-05-05T20:30:51.676647",
+    "bundle_id": "ca61a910-815d-471c-8b07-85a8a95f5ca0",
+    "attached_to": null,
+    "storage_subdir": "OCEL"
+  },
+  "cd9a9ea8-6d6e-4207-8d48-f25083fdb761": {
+    "id": "cd9a9ea8-6d6e-4207-8d48-f25083fdb761",
+    "type": "CCEL",
+    "format": "parquet",
+    "source_file": "sub_log_6caaa234-8564-4dd4-abb5-017ee7210b31",
+    "created_at": "2026-05-05T20:30:52.003634",
+    "bundle_id": "ca61a910-815d-471c-8b07-85a8a95f5ca0",
+    "attached_to": null,
+    "storage_subdir": "CCEL"
+  },
+  "bd58a193-9a59-4628-873e-c6d01ddf1f65": {
+    "id": "bd58a193-9a59-4628-873e-c6d01ddf1f65",
+    "type": "Swimlane",
+    "format": "bpmn",
+    "source_file": "swimlane_6caaa234-8564-4dd4-abb5-017ee7210b31",
+    "created_at": "2026-05-05T20:30:52.588290",
+    "bundle_id": "ca61a910-815d-471c-8b07-85a8a95f5ca0",
+    "attached_to": null,
+    "storage_subdir": "BPMN"
   }
 }

@@ -61,6 +61,7 @@ export default function ClientPage() {
     setActiveSection("overview")
     setBpmnMaximized(false)
   }
+  
 
   return (
     <div className={styles.pageWrapper}>

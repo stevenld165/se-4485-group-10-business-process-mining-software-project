@@ -1,5 +1,3 @@
-import { DataTable } from "../event-logs/data-table"
-import { ColumnDef } from "@tanstack/react-table"
 import styles from "./EventLogSection.module.css"
 import { EventLogRow } from "../hooks/useProcessFile"
 import EventLogPanel from "./EventLogpanel"

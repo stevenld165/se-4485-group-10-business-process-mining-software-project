@@ -1,28 +1,18 @@
 "use client"
 
 import { ColumnDef } from "@tanstack/react-table"
+import { EventLogRow } from "../hooks/useProcessFile"
 
-export type Entry = {
-  Case_ID: string
-  Activity: string
-  Timestamp: Date
+export function generateColumns(data: EventLogRow[]): ColumnDef<EventLogRow, any>[] {
+  if (!data || data.length === 0) return []
+
+  // Get the keys from the first object
+  const keys = Object.keys(data[0])
+
+  // Map them into TanStack ColumnDef format
+  return keys.map((key) => ({
+    accessorKey: key,
+    header: key,
+    // Add cell formatting if needed in the future
+  }))
 }
-
-export const columns: ColumnDef<Entry>[] = [
-  {
-    accessorKey: "Case_ID",
-    header: "Case ID",
-  },
-  {
-    accessorKey: "Activity",
-    header: "Activity",
-  },
-  {
-    accessorKey: "Timestamp",
-    header: "Timestamp",
-  },
-  {
-    accessorKey: "Role",
-    header: "Role",
-  },
-]

@@ -15,11 +15,10 @@ import "bpmn-js/dist/assets/bpmn-js.css"
 import { Button } from "./ui/button"
 
 import dagre from "dagre"
-import { start } from "repl"
-
 
 interface BpmnViewerProps {
   xml?: string
+  onNodeClick?: (activityName: string) => void
 }
 
 export interface BpmnViewerHandle {
@@ -439,7 +438,7 @@ function RedoIcon() {
 }
 
 // -------------------------------------------------------------------
-const BpmnViewer = forwardRef(({ xml }: BpmnViewerProps, ref) => {
+const BpmnViewer = forwardRef(({ xml, onNodeClick }: BpmnViewerProps, ref) => {
   const containerRef = useRef<HTMLDivElement>(null)
   const [bpmnModeler, setBpmnModeler] = useState<Modeler | null>(null)
   const [loading, setLoading] = useState<boolean>(false)
@@ -469,7 +468,17 @@ const BpmnViewer = forwardRef(({ xml }: BpmnViewerProps, ref) => {
     })
 
     setBpmnModeler(modeler)
-
+    modeler.on("element.click", (e: any) => {
+      const element = e.element
+      if (element.type != "bpmn:Process" &&
+        element.type !== "bpmn:SequenceFlow" &&
+        element.type !== "bpmn:Lane"){
+          const activityName = element.businessObject?.name
+          if(activityName && onNodeClick) {
+            onNodeClick(activityName)
+          }
+        }
+    })
     //Subscribe to command stack changes for undo/redo state
     const updateUndoRedo = () => {
       const commandStack = modeler.get<any>("commandStack")
@@ -608,15 +617,27 @@ const BpmnViewer = forwardRef(({ xml }: BpmnViewerProps, ref) => {
         console.log(el)
         canvas.addMarker(el.id, "highlighted-node")
         // Scroll the element into view
-        canvas.scrollToElement(el)
+        const viewbox = canvas.viewbox()
+
+        canvas.viewbox({
+          x: el.x - viewbox.width / 2 + (el.width / 2 || 0),
+          y: el.y - viewbox.height / 2 + (el.height / 2 || 0),
+          width: viewbox.width,
+          height: viewbox.height,
+        })
       })
     },
   }))
 
-  //Toolbar separator helper
-   const Sep = () => <div style={{ width: 1, height: 20, background: "#e5e7eb", margin: "0 4px" }} />
   return (
     <div className='w-full h-full flex flex-col'>
+      <style>{`
+        .highlighted-node:not(.djs-connection) .djs-visual > :nth-child(1) {
+          fill: #dbeafe !important;       /* Light blue background */
+          stroke: #2563eb !important;     /* Dark blue border */
+          stroke-width: 4px !important;   /* Thicker border */
+        }
+      `}</style>
       {/* Controls */}
       <div className='bg-white border-b p-4 flex gap-2'>
         <Button
