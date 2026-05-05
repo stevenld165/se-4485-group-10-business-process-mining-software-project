@@ -149,3 +149,26 @@
   height: 16px;
   flex-shrink: 0;
 }
+
+.sidebarItemInner {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+ 
+/* Count badge shown on the Upload History sidebar item */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background-color: var(--color-text-tertiary, #a0a0a0);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+}

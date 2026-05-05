@@ -4,6 +4,7 @@ import FileInput from "@/components/FileInput"
 interface UploadSectionProps {
   onFileSubmit: (file: File) => void
   isOpen: boolean
+  isLoading: boolean
   onClose: () => void
 }
 
