@@ -1,61 +1,108 @@
 "use client"
 
+import { useState } from "react"
 import { EventLogRow } from "../hooks/useProcessFile"
 import styles from "./EventLogpanel.module.css"
+
+const PAGE_SIZE = 50
 
 interface EventLogPanelProps {
   data: EventLogRow[]
   onRowClick?: (row: EventLogRow) => void
-  selectedActivity?: string | null
 }
 
-/**
- * A lightweight table that renders any array of EventLogRow objects.
- * Columns are derived automatically from the first row's keys.
- * Clicking a row calls onRowClick; the row whose "activity" matches
- * selectedActivity is highlighted.
- */
-export default function EventLogPanel({
-  data,
-  onRowClick,
-  selectedActivity,
-}: EventLogPanelProps) {
+export default function EventLogPanel({ data, onRowClick }: EventLogPanelProps) {
+  const [selectedRowIndex, setSelectedRowIndex] = useState<number | null>(null)
+  const [page, setPage] = useState(0)
+
   if (!data || data.length === 0) {
     return <div className={styles.empty}>No data available.</div>
   }
 
   const columns = Object.keys(data[0])
+  const totalPages = Math.ceil(data.length / PAGE_SIZE)
+  const pageData = data.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
+
+  // When jumping pages, reset the selected row since indices change
+  const goToPage = (next: number) => {
+    setPage(next)
+    setSelectedRowIndex(null)
+  }
 
   return (
-    <div className={styles.tableWrapper}>
-      <table className={styles.table}>
-        <thead>
-          <tr>
-            {columns.map((col) => (
-              <th key={col} className={styles.th}>{col}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {data.map((row, i) => {
-            const activity = row["activity"] as string | undefined
-            const isSelected = activity != null && activity === selectedActivity
-            return (
+    <div className={styles.wrapper}>
+
+      {/* Scrollable table area */}
+      <div className={styles.scrollContainer}>
+        <table className={styles.table}>
+          <thead className={styles.thead}>
+            <tr>
+              {columns.map((col) => (
+                <th key={col} className={styles.th}>{col}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {pageData.map((row, i) => (
               <tr
                 key={i}
-                className={`${styles.tr} ${isSelected ? styles.trSelected : ""} ${onRowClick ? styles.trClickable : ""}`}
-                onClick={() => onRowClick?.(row)}
+                className={`${styles.tr} ${i === selectedRowIndex ? styles.trSelected : ""} ${onRowClick ? styles.trClickable : ""}`}
+                onClick={() => {
+                  setSelectedRowIndex(i)
+                  onRowClick?.(row)
+                }}
               >
                 {columns.map((col) => (
                   <td key={col} className={styles.td}>
-                    {row[col] ?? "—"}
+                    {String(row[col] ?? "—")}
                   </td>
                 ))}
               </tr>
-            )
-          })}
-        </tbody>
-      </table>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Pagination controls — only shown when there is more than one page */}
+      {totalPages > 1 && (
+        <div className={styles.pagination}>
+          <button
+            className={styles.pageBtn}
+            onClick={() => goToPage(0)}
+            disabled={page === 0}
+          >
+            «
+          </button>
+          <button
+            className={styles.pageBtn}
+            onClick={() => goToPage(page - 1)}
+            disabled={page === 0}
+          >
+            ‹
+          </button>
+
+          <span className={styles.pageInfo}>
+            Page <strong>{page + 1}</strong> of <strong>{totalPages}</strong>
+            <span className={styles.rowCount}>({data.length.toLocaleString()} rows)</span>
+          </span>
+
+          <button
+            className={styles.pageBtn}
+            onClick={() => goToPage(page + 1)}
+            disabled={page === totalPages - 1}
+          >
+            ›
+          </button>
+          <button
+            className={styles.pageBtn}
+            onClick={() => goToPage(totalPages - 1)}
+            disabled={page === totalPages - 1}
+          >
+            »
+          </button>
+        </div>
+      )}
+
     </div>
   )
 }

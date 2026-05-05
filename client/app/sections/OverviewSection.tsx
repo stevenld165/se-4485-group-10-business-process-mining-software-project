@@ -2,14 +2,12 @@
 
 import { useRef, useState, useCallback, RefObject } from "react"
 import BpmnViewer, { BpmnViewerHandle } from "@/components/BpmnViewer"
-import { DataTable } from "../event-logs/data-table"
-import { ColumnDef } from "@tanstack/react-table"
 import styles from "./OverviewSection.module.css"
 import { Entry } from "../event-logs/columns"
 import EventLogPanel from "./EventLogpanel"
 import { EventLogRow } from "../hooks/useProcessFile"
 
-interface OverviewSectionProps<TData , TValue> {
+interface OverviewSectionProps<TData, TValue> {
   ccelData: EventLogRow[]
   ocelData: EventLogRow[] | null
   xml: string
@@ -31,6 +29,7 @@ export default function OverviewSection<TData extends Entry, TValue>({
   const [leftPercent, setLeftPercent] = useState(35)
   const containerRef = useRef<HTMLDivElement>(null)
   const dragging = useRef(false)
+  const [selectedActivity, setSelectedActivity] = useState<string | null>(null)
 
   const onPointerDown = useCallback((e: React.PointerEvent) => {
     e.preventDefault()
@@ -51,8 +50,6 @@ export default function OverviewSection<TData extends Entry, TValue>({
     document.body.style.cursor = ""
   }, [])
 
-   const [selectedActivity, setSelectedActivity] = useState<string | null>(null)
- 
   const handleRowClick = (row: EventLogRow) => {
     const activity = row["activity"] as string ?? null
     const next = selectedActivity === activity ? null : activity
@@ -71,7 +68,7 @@ export default function OverviewSection<TData extends Entry, TValue>({
 
       <div ref={containerRef} className={styles.panelGroup}>
 
-        {/* ----Left: event log panel(s) - hidden when BPMN is maximized ----- */}
+        {/* Left: event log panel(s) — hidden when BPMN is maximized */}
         {!bpmnMaximized && (
           <>
             <div
@@ -86,39 +83,53 @@ export default function OverviewSection<TData extends Entry, TValue>({
                 <span className={styles.panelTitle}>Event log</span>
                 <span className={styles.panelNav}>Expand ⌞ ⌝</span>
               </div>
-              {/*
-                Stacked tables:
-                - OCEL table shown only if ocelData is present
-                - CCEL table always shown
+
+              {/* 
+                Two independent sub-panels.
+                If only CCEL: it takes full height.
+                If both: each takes 50% with a divider between.
+                Scrolling happens inside EventLogPanel via the virtualizer.
               */}
-              <div className={styles.panelBody} style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-                {ocelData && ocelData.length > 0 && (
-                  <div className={styles.logSubPanel}>
-                    <div className={styles.logSubPanelLabel}>
-                      Object-centric log (OCEL)
+              <div className={styles.panelBody}>
+                {ocelData && ocelData.length > 0 ? (
+                  <>
+                    <div className={styles.logSubPanel}>
+                      <div className={styles.logSubPanelLabel}>
+                        Object-centric log (OCEL)
+                      </div>
+                      <div className={styles.logSubPanelBody}>
+                        <EventLogPanel
+                          data={ocelData}
+                          onRowClick={handleRowClick}
+                        />
+                      </div>
                     </div>
+
+                    <div className={styles.logSubDivider} />
+
+                    <div className={styles.logSubPanel}>
+                      <div className={styles.logSubPanelLabel}>
+                        Flattened log (CCEL)
+                      </div>
+                      <div className={styles.logSubPanelBody}>
+                        <EventLogPanel
+                          data={ccelData}
+                          onRowClick={handleRowClick}
+                        />
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className={styles.logSubPanel}>
+                    <div className={styles.logSubPanelLabel}>CCEL</div>
                     <div className={styles.logSubPanelBody}>
                       <EventLogPanel
-                        data={ocelData}
+                        data={ccelData}
                         onRowClick={handleRowClick}
-                        selectedActivity={selectedActivity}
                       />
                     </div>
                   </div>
                 )}
- 
-                <div className={styles.logSubPanel} style={{ flex: 1 }}>
-                  <div className={styles.logSubPanelLabel}>
-                    {ocelData ? "Flattened log (CCEL)" : "CCEL"}
-                  </div>
-                  <div className={styles.logSubPanelBody}>
-                    <EventLogPanel
-                      data={ccelData}
-                      onRowClick={handleRowClick}
-                      selectedActivity={selectedActivity}
-                    />
-                  </div>
-                </div>
               </div>
             </div>
 
@@ -148,6 +159,7 @@ export default function OverviewSection<TData extends Entry, TValue>({
             <BpmnViewer xml={xml} ref={viewerRef} />
           </div>
         </div>
+
       </div>
     </div>
   )

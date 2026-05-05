@@ -31,9 +31,11 @@
 }
 
 .panelBody {
+  display:flex;
+  flex-direction: column;
   flex: 1;
   overflow: auto;
-  min-height: 0;
+  overflow:hidden;
 }
 
 .resizeHandle {
@@ -74,4 +76,35 @@
 .panelNav {
   font-size: 15px;
   color: var(--color-text-tertiary, #2e2f3179);
+}
+
+.logSubPanel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;      /* allows each sub-panel to shrink/grow correctly */
+  overflow: hidden;
+}
+
+.logSubPanelLabel {
+  flex-shrink: 0;
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.logSubPanelBody {
+  flex: 1;
+  min-height: 0;      /* critical — lets the virtualizer container size correctly */
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.logSubDivider {
+  flex-shrink: 0;
+  height: 4px;
+  background: #e5e7eb;
 }
