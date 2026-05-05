@@ -40,7 +40,7 @@ function injectLanes(
   const process = doc.getElementsByTagNameNS(BPMN, "process")[0]
   const plane = doc.getElementsByTagNameNS(BPMNDI, "BPMNPlane")[0]
 
-  if (!process || !plane) return xml // nothing to do
+  if (!process || !plane) return xml
 
   // Build activityName -> elementId from existing process children
   const nameToId: Record<string, string> = {}
@@ -485,7 +485,7 @@ const BpmnViewer = forwardRef(({ xml }: BpmnViewerProps, ref) => {
       const doc = parser.parseFromString(xml, "application/xml")
       const BPMN = "http://www.omg.org/spec/BPMN/20100524/MODEL"
       const processEl = doc.getElementsByTagNameNS(BPMN, "process")[0]
-      const actorMapRaw = processEl?.getAttribute("data-actor-map")
+      const actorMapRaw = processEl?.getAttribute("data-role-map")
       const actorToActivities: Record<string, string[]> = actorMapRaw
         ? JSON.parse(actorMapRaw)
         : {}

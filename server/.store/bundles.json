@@ -124,5 +124,32 @@
       "CCEL": "1665047a-80b4-41ff-a936-3123a9e62606",
       "Swimlane": "b6eca12f-a95e-4f11-897e-36eb24a0eac8"
     }
+  },
+  "af9d035f-8c57-43d9-af3e-ef676900b4be": {
+    "id": "af9d035f-8c57-43d9-af3e-ef676900b4be",
+    "label": "HR_Onboarding_WITH_BRANCHES_AND_LOOPS",
+    "created_at": "2026-05-04T18:50:20.022338",
+    "members": {
+      "CCEL": "0bed951e-2421-419d-8d93-94cead296501",
+      "Swimlane": "5975a5c6-b2d0-48b2-9765-bc4a92fa3f65"
+    }
+  },
+  "0fd93060-4f00-4de2-8d0e-55da1a43a564": {
+    "id": "0fd93060-4f00-4de2-8d0e-55da1a43a564",
+    "label": "HR_Onboarding_2_WITH_ROLES",
+    "created_at": "2026-05-04T18:50:58.112902",
+    "members": {
+      "CCEL": "5daa77a8-c337-4b4d-afaf-642d19466003",
+      "Swimlane": "712a3842-0bfc-4d03-8e04-90bd7f03966a"
+    }
+  },
+  "79884c61-e268-4a2e-a9a4-6aadd9ef1582": {
+    "id": "79884c61-e268-4a2e-a9a4-6aadd9ef1582",
+    "label": "HR_Onboarding_WITH_BRANCHES_AND_LOOPS",
+    "created_at": "2026-05-05T02:18:19.286566",
+    "members": {
+      "CCEL": "fdd260d2-4239-4426-9eb5-40eb815493ff",
+      "Swimlane": "19500224-8b97-4b17-a80d-822a2cb95411"
+    }
   }
 }
