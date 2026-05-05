@@ -36,6 +36,22 @@ class OCELFlattener(ElogFlattener):
     ranking = self._find_object_for_simplification(oc_event_log)
     best_object_type = ranking[0][0]
     flat_df = pm4py.ocel.ocel_flattening(oc_event_log, best_object_type)
+    if 'resource' not in flat_df.columns or flat_df['resource'].isna().all():
+      if 'resource' in elog_denormalized.columns:
+        actor_map = (
+          elog_denormalized[['ocel:activity', 'ocel:timestamp', 'resource']]
+          .drop_duplicates(subset=['ocel:activity', 'ocel:timestamp'])
+          .rename(columns={
+            'ocel:activity': 'concept:name',
+            'ocel:timestamp': 'time:timestamp'
+          })
+        )
+        flat_df = flat_df.merge(
+          actor_map,
+          on=['concept:name', 'time:timestamp'],
+          how='left'
+        )
+
     return EventLogFactory.create_elog('CCEL', file_type, flat_df), flat_df
 
   def _find_object_for_simplification(self, oc_event_log) -> list:

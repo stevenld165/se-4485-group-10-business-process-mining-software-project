@@ -64,6 +64,11 @@ class ConstructGraphResponse:
 
   def _prettify_xml(self, xml_string: str) -> str:
     try:
+      ET.register_namespace('bpmn', 'http://www.omg.org/spec/BPMN/20100524/MODEL')
+      ET.register_namespace('bpmndi', 'http://www.omg.org/spec/BPMN/20100524/DI')
+      ET.register_namespace('dc', 'http://www.omg.org/spec/DD/20100524/DC')
+      ET.register_namespace('di', 'http://www.omg.org/spec/DD/20100524/DI')
+
       declaration = ""
       if xml_string.strip().startswith('<?xml'):
         decl_end = xml_string.find('?>') + 2

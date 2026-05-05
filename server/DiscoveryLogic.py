@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from collections import defaultdict
 
 from EventLogLogic import EventLog, OCEventLog, CCEventLog
 import pandas as pd
@@ -34,16 +35,20 @@ class CCELDiscovery(DiscoveryAlg):
     if 'resource' not in df.columns or 'concept:name' not in df.columns:
       return {}
 
-    role_map = (
-      df.groupby('resource')['concept:name']
-      .apply(set)
-      .to_dict()
+    dominant = (
+      df.groupby(['concept:name', 'resource'])
+      .size()
+      .reset_index(name='count')
+      .sort_values('count', ascending=False)
+      .drop_duplicates(subset='concept:name')  # keep top actor per activity
+      .set_index('resource')['concept:name']
     )
 
-    self._role_to_activities = {
-      k: list(v) for k, v in role_map.items()
-    }
+    role_map = defaultdict(list)
+    for actor, activity in dominant.items():
+      role_map[actor].append(activity)
 
+    self._role_to_activities = dict(role_map)
     return self._role_to_activities
 
 class DiscoveryFactory:
