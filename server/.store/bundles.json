@@ -179,5 +179,15 @@
       "CCEL": "be791257-2906-4294-a5a2-2c879c1c75ed",
       "Swimlane": "f4afbad0-2c14-414a-8bfe-33947a9ada01"
     }
+  },
+  "1668e1b0-9b47-44ce-8dac-34a719154172": {
+    "id": "1668e1b0-9b47-44ce-8dac-34a719154172",
+    "label": "HR_Onboarding_OCEL",
+    "created_at": "2026-05-06T00:07:15.238960",
+    "members": {
+      "OCEL": "4cd0e442-eb70-4d0f-952c-4d269af061aa",
+      "CCEL": "410cabc0-5c14-432a-a181-15bb4007203a",
+      "Swimlane": "d70baa37-8cf7-49cb-a456-cb42a52cd5b8"
+    }
   }
 }

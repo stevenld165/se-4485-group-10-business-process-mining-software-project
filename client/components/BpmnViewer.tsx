@@ -15,11 +15,10 @@ import "bpmn-js/dist/assets/bpmn-js.css"
 import { Button } from "./ui/button"
 
 import dagre from "dagre"
-import { start } from "repl"
-
 
 interface BpmnViewerProps {
   xml?: string
+  onNodeClick?: (activityName: string) => void
 }
 
 export interface BpmnViewerHandle {
@@ -42,7 +41,7 @@ function injectLanes(
 
   if (!process || !plane) return xml
 
-  // Build activityName -> elementId from existing process children
+  // ── 1. Build nameToId and idToElement from existing process children ────────
   const nameToId: Record<string, string> = {}
   const idToElement: Record<string, Element> = {}
   Array.from(process.children).forEach((el) => {
@@ -54,37 +53,172 @@ function injectLanes(
     }
   })
 
-  // Remove any stale laneSets
+  // ── 2. Detect which activity names are shared across multiple actors ─────────
+  // activityName -> list of actors that own it
+  const activityActors: Record<string, string[]> = {}
+  Object.entries(actorToActivities).forEach(([actor, activities]) => {
+    activities.forEach((actName) => {
+      if (!activityActors[actName]) activityActors[actName] = []
+      activityActors[actName].push(actor)
+    })
+  })
+
+  // ── 3. Clone shared nodes so each actor gets its own dedicated element ───────
+  // actorActivityKey -> element id  (key = `${actor}||${actName}`)
+  const actorActivityToId: Record<string, string> = {}
+
+  // Helper: find the BPMNShape for a given element id
+  const findShape = (elementId: string): Element | null => {
+    return (
+      Array.from(plane.children).find(
+        (s) =>
+          s.localName === "BPMNShape" &&
+          s.getAttribute("bpmnElement") === elementId,
+      ) ?? null
+    )
+  }
+
+  Object.entries(actorToActivities).forEach(([actor, activities]) => {
+    activities.forEach((actName) => {
+      const owners = activityActors[actName]
+      const originalId = nameToId[actName]
+      if (!originalId) return
+
+      if (owners.length === 1) {
+        // Only one actor — no cloning needed, but rename to "[actName]\n[actor]"
+        // so it's clear which lane owns it.
+        const el = idToElement[originalId]
+        if (el) el.setAttribute("name", `${actName}\n[${actor}]`)
+        actorActivityToId[`${actor}||${actName}`] = originalId
+        return
+      }
+
+      // Shared activity: first actor keeps the original element (renamed),
+      // subsequent actors get clones with new IDs.
+      const isFirst = owners[0] === actor
+
+      if (isFirst) {
+        // Rename the original
+        const el = idToElement[originalId]
+        if (el) el.setAttribute("name", `${actName}\n[${actor}]`)
+        actorActivityToId[`${actor}||${actName}`] = originalId
+      } else {
+        // Clone the original process element
+        const original = idToElement[originalId]
+        if (!original) return
+
+        const safeActor = actor.replace(/\s+/g, "_")
+        const safeAct = actName.replace(/\s+/g, "_")
+        const cloneId = `clone_${safeActor}_${safeAct}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`
+
+        const clone = original.cloneNode(true) as Element
+        clone.setAttribute("id", cloneId)
+        clone.setAttribute("name", `${actName}\n[${actor}]`)
+
+        // Remove incoming/outgoing refs from the clone — they will be
+        // re-wired below when we duplicate the sequence flows.
+        Array.from(clone.children)
+          .filter(
+            (c) =>
+              c.localName === "incoming" || c.localName === "outgoing",
+          )
+          .forEach((c) => clone.removeChild(c))
+
+        process.appendChild(clone)
+        idToElement[cloneId] = clone
+
+        // Clone the BPMNShape so the element renders
+        const origShape = findShape(originalId)
+        if (origShape) {
+          const cloneShape = origShape.cloneNode(true) as Element
+          cloneShape.setAttribute("id", `${cloneId}_di`)
+          cloneShape.setAttribute("bpmnElement", cloneId)
+          plane.appendChild(cloneShape)
+        }
+
+        actorActivityToId[`${actor}||${actName}`] = cloneId
+      }
+    })
+  })
+
+  // ── 4. Duplicate sequence flows that connect to/from shared clones ───────────
+  // For each clone, find the original's sequence flows and create mirrored flows
+  // pointing to/from the clone instead.
+  Object.entries(actorToActivities).forEach(([actor, activities]) => {
+    activities.forEach((actName) => {
+      const owners = activityActors[actName]
+      if (owners.length <= 1 || owners[0] === actor) return // originals keep their flows
+
+      const originalId = nameToId[actName]
+      const cloneId = actorActivityToId[`${actor}||${actName}`]
+      if (!originalId || !cloneId) return
+
+      // Find all sequence flows touching the original
+      Array.from(process.children)
+        .filter((el) => el.localName === "sequenceFlow")
+        .forEach((sf) => {
+          const src = sf.getAttribute("sourceRef")
+          const tgt = sf.getAttribute("targetRef")
+          const sfId = sf.getAttribute("id")
+          if (!sfId) return
+
+          if (src === originalId || tgt === originalId) {
+            const newSfId = `${sfId}_clone_${actor.replace(/\s+/g, "_")}`
+            const newSf = sf.cloneNode(true) as Element
+            newSf.setAttribute("id", newSfId)
+            if (src === originalId) newSf.setAttribute("sourceRef", cloneId)
+            if (tgt === originalId) newSf.setAttribute("targetRef", cloneId)
+            process.appendChild(newSf)
+
+            // Clone the BPMNEdge shape for the new flow
+            const origEdge = Array.from(plane.children).find(
+              (s) =>
+                s.localName === "BPMNEdge" &&
+                s.getAttribute("bpmnElement") === sfId,
+            )
+            if (origEdge) {
+              const cloneEdge = origEdge.cloneNode(true) as Element
+              cloneEdge.setAttribute("id", `${newSfId}_di`)
+              cloneEdge.setAttribute("bpmnElement", newSfId)
+              plane.appendChild(cloneEdge)
+            }
+          }
+        })
+    })
+  })
+
+  // ── 5. Remove stale laneSets ─────────────────────────────────────────────────
   Array.from(process.getElementsByTagNameNS(BPMN, "laneSet")).forEach((ls) =>
     ls.parentNode?.removeChild(ls),
   )
 
-  // Build <laneSet>
+  // ── 6. Build <laneSet> — each lane references only its own element IDs ───────
   const laneSet = doc.createElementNS(BPMN, "laneSet")
   laneSet.setAttribute("id", "laneSet_1")
 
   let currentY = 0
   const LANE_HEIGHT = 150
 
-  Object.entries(actorToActivities).forEach(([actor, activities], idx) => {
+  Object.entries(actorToActivities).forEach(([actor, activities]) => {
     const laneId = `lane_${actor.replace(/\s+/g, "_")}`
 
     const lane = doc.createElementNS(BPMN, "lane")
     lane.setAttribute("id", laneId)
     lane.setAttribute("name", actor)
 
+    // Collect the element IDs that belong exclusively to this actor
+    const assignedIds = new Set<string>()
+
     activities.forEach((actName) => {
-      const nodeId = nameToId[actName]
+      const nodeId = actorActivityToId[`${actor}||${actName}`] ?? nameToId[actName]
       if (!nodeId) return
       const ref = doc.createElementNS(BPMN, "flowNodeRef")
       ref.textContent = nodeId
       lane.appendChild(ref)
+      assignedIds.add(nodeId)
     })
-    // Assign control nodes (start/end/gateway) that point to this lane's activities
-    const assignedIds = new Set(
-      activities.map((a) => nameToId[a]).filter(Boolean),
-    )
 
+    // Assign control nodes (start/end/gateway) adjacent to this lane's activities
     Array.from(process.children).forEach((el) => {
       const id = el.getAttribute("id")
       if (!id || assignedIds.has(id)) return
@@ -99,13 +233,12 @@ function injectLanes(
 
       if (!isControlNode) return
 
-      // Check if this control node points to any activity in this lane
+      // Check if this control node points to any activity in this lane (outgoing)
       const outgoing = Array.from(process.children).filter(
         (sf) =>
           sf.localName.toLowerCase().includes("sequenceflow") &&
           sf.getAttribute("sourceRef") === id,
       )
-
       for (const sf of outgoing) {
         const targetId = sf.getAttribute("targetRef")
         if (targetId && assignedIds.has(targetId)) {
@@ -136,6 +269,7 @@ function injectLanes(
         }
       }
     })
+
     laneSet.appendChild(lane)
 
     // Placeholder BPMNShape for the lane (dagre will overwrite bounds)
@@ -168,11 +302,11 @@ function injectLanes(
  * Sequence flows become edges.
  */
 async function applyDagreLayout(modeler: Modeler): Promise<void> {
-  const NODESEP = 20
+  const NODESEP = 30
   const EDGESEP = 20
-  const RANKSEP = 40
+  const RANKSEP = 60
 
-  // ── 1. Get raw moddle definitions (same as pm4py's approach) ──────────────
+  // ── 1. Get raw moddle definitions ────────────────────────────────────────
   const definitions = (modeler as any)._definitions
   const rootProcess = definitions.rootElements.find(
     (el: any) => el.$type === "bpmn:Process",
@@ -180,240 +314,287 @@ async function applyDagreLayout(modeler: Modeler): Promise<void> {
   if (!rootProcess) return
 
   const flowElements: any[] = rootProcess.flowElements ?? []
+  const laneSets: any[] = rootProcess.laneSets ?? []
   const planeElements: any[] = definitions.diagrams[0].plane.planeElement ?? []
 
   // Build index: bpmnElement.id -> index in planeElements
   const graphicalDict: Record<string, number> = {}
-  const edgesDict: Record<string, string> = {} // "srcId@tgtId" -> sequenceFlow id
+  const edgesDict: Record<string, string> = {}
 
   planeElements.forEach((pe: any, i: number) => {
     const id = pe.bpmnElement?.id
     if (id) graphicalDict[id] = i
   })
 
-  // ── 2. DFS from start event (same traversal as pm4py) ────────────────────
-  const startEvent = flowElements.find((n: any) =>
-    n.$type?.toLowerCase().endsWith("startevent"),
-  )
-  if (!startEvent) return
-
-  const visited: any[] = []
-  const toVisit: any[] = [startEvent]
-
-  while (toVisit.length > 0) {
-    const el = toVisit.pop()
-    if (!visited.includes(el)) visited.push(el)
-    if (el.outgoing) {
-      for (const out of el.outgoing) {
-        // Record edge: "sourceId@targetId" -> flowId
-        edgesDict[`${el.id}@${out.targetRef.id}`] = out.id
-        if (!visited.includes(out.targetRef)) {
-          toVisit.push(out.targetRef)
-        }
-      }
-    }
-  }
-
-  // ── 3. Build lane membership map: nodeId -> laneId ───────────────────────
+  // ── 2. Map Nodes to Lanes via Name Parsing ───────────────────────────────
   const nodeToLane: Record<string, string> = {}
-  const laneSets: any[] = rootProcess.laneSets ?? []
-  laneSets.forEach((ls: any) => {
-    ;(ls.lanes ?? []).forEach((lane: any) => {
-      ;(lane.flowNodeRef ?? []).forEach((ref: any) => {
-        nodeToLane[ref.id] = lane.id
-      })
-    })
-  })
-// ── Helper: run one dagre pass and return the graph ───────────────────────
+  const visited = new Set<any>()
   const lanes: any[] = laneSets.flatMap((ls: any) => ls.lanes ?? [])
-  if(lanes.length === 0) {
+
+  if (lanes.length === 0) {
     console.warn("No lanes found in BPMN diagram — skipping layout")
     return
   }
-  
-  const runDagre = (
-    forcedLaneWidth?: number,
-    forcedLaneHeight?: number,
-  ): dagre.graphlib.Graph => {
-    const g = new dagre.graphlib.Graph({ compound: true, multigraph: false })
-    g.setGraph({
-      rankdir: "LR",
-      nodesep: NODESEP,
-      edgesep: EDGESEP,
-      ranksep: RANKSEP,
-    })
-    g.setDefaultEdgeLabel(() => ({}))
 
-    // Add lane compound nodes — these get the forced dimensions on 2nd pass
-    lanes.forEach((lane: any) => {
-      const pe = planeElements[graphicalDict[lane.id]]
-      const w = forcedLaneWidth ?? pe?.bounds?.width ?? 800
-      const h = forcedLaneHeight ?? pe?.bounds?.height ?? 150
-
-      console.log(w)
-      g.setNode(lane.id, { label: lane.name ?? lane.id, width: w, height: h })
-    })
-
-    // Add flow nodes — always use their ORIGINAL bounds, never scale them
-    const NODE_SCALE = 1.6  // increase to make tasks bigger; 1.0 = original size
-
-    visited.forEach((el: any) => {
-      const pe = planeElements[graphicalDict[el.id]]
-      if (!pe?.bounds) return
-
-      const isTask = el.$type?.toLowerCase().includes("task") || el.$type?.toLowerCase().includes("subprocess")
-      const scale = isTask ? NODE_SCALE : 1.0
-
-      g.setNode(el.id, {
-        label: el.name ?? el.id,
-        width: pe.bounds.width * scale,
-        height: pe.bounds.height * scale,
-      })
-
-      const laneId = nodeToLane[el.id]
-      if (laneId) g.setParent(el.id, laneId)
-    })
-
-    // Add edges
-    flowElements
-      .filter((el: any) => el.$type === "bpmn:SequenceFlow")
-      .forEach((flow: any) => {
-        const src = flow.sourceRef?.id
-        const tgt = flow.targetRef?.id
-        if (src && tgt && g.hasNode(src) && g.hasNode(tgt)) {
-          g.setEdge(src, tgt, { id: flow.id })
-        }
-      })
-
-    dagre.layout(g)
-    return g
-  }
-
-  // ── 4. First pass: measure how large dagre makes the lane containers ───────
-  const g1 = runDagre()
-
-  let maxLaneWidth = 0
-  let maxLaneHeight = 0
-
-  // Only measure lane nodes, not flow nodes
-  lanes.forEach((lane: any) => {
-    const n = g1.node(lane.id)
-    if (!n) return
-    maxLaneWidth = Math.max(maxLaneWidth, n.width)
-    maxLaneHeight = Math.max(maxLaneHeight, n.height)
+  // Create a lookup to easily find a lane ID by its Actor Name
+  const actorToLaneId: Record<string, string> = {}
+  lanes.forEach((lane) => {
+    if (lane.name) actorToLaneId[lane.name.trim()] = lane.id
   })
 
-  console.log(maxLaneWidth, maxLaneHeight)
+  flowElements.forEach((el: any) => {
+    if (el.$type === "bpmn:SequenceFlow") {
+      edgesDict[`${el.sourceRef?.id}@${el.targetRef?.id}`] = el.id
+      return
+    }
 
-  // ── 5. Second pass: expand lanes with pm4py's multipliers ─────────────────
-  const safeWidth = maxLaneWidth > 0 ? maxLaneWidth * 1.5 : 800
-  const safeHeight = maxLaneHeight > 0 ? maxLaneHeight * 1.5 : 150
-  const g2 = runDagre(safeWidth, safeHeight)
+    let assignedLaneId: string | null = null
 
-  const targetWidth = maxLaneWidth * 1
+    // Strategy A: Parse the actor directly from the node's name (e.g., "Task\n[Trainer A]")
+    if (el.name && el.name.includes("[")) {
+      const match = el.name.match(/\[(.*?)\]/)
+      if (match && match[1]) {
+        const actorName = match[1].trim()
+        if (actorToLaneId[actorName]) {
+          assignedLaneId = actorToLaneId[actorName]
+        }
+      }
+    }
 
-  lanes.forEach((lane: any) => {
-    const n = g2.node(lane.id)
-    if (n) {
-      const oldWidth = n.width
-      n.width = targetWidth
-      // Adjust x position to maintain centering
-      n.x = n.x - (oldWidth - targetWidth) / 2
+    // Strategy B: Fallback to XML flowNodeRef (usually catches unnamed gateways/events)
+    if (!assignedLaneId) {
+      lanes.forEach((lane) => {
+        const refs = lane.flowNodeRef ?? []
+        if (refs.some((r: any) => r.id === el.id)) {
+          assignedLaneId = lane.id
+        }
+      })
+    }
+
+    // Strategy C: Safety net. If an element is floating, pin it to the first lane
+    // so Dagre doesn't break the layout.
+    if (!assignedLaneId && lanes.length > 0) {
+      assignedLaneId = lanes[0].id
+    }
+
+    if (assignedLaneId) {
+      nodeToLane[el.id] = assignedLaneId
+      visited.add(el)
     }
   })
 
-  let laneY = 0
-  const laneSpacing = 20  // optional gap between lanes
+  // ── 3. Run Dagre (Single Pass) ───────────────────────────────────────────
+  const g = new dagre.graphlib.Graph({ compound: true, multigraph: false })
+  g.setGraph({
+    rankdir: "LR",
+    nodesep: NODESEP,
+    edgesep: EDGESEP,
+    ranksep: RANKSEP,
+  })
+  g.setDefaultEdgeLabel(() => ({}))
 
+  // Add lanes WITHOUT forcing width/height. Dagre MUST calculate this 
+  // dynamically based on the child nodes we put inside them.
   lanes.forEach((lane: any) => {
-    const n = g2.node(lane.id)
+    g.setNode(lane.id, { label: lane.name ?? lane.id })
+  })
+
+  const NODE_SCALE = 1.6 
+
+  visited.forEach((el: any) => {
+    const idx = graphicalDict[el.id]
+    const pe = idx !== undefined ? planeElements[idx] : null
+    if (!pe?.bounds) return
+
+    const isTask = el.$type?.toLowerCase().includes("task") || el.$type?.toLowerCase().includes("subprocess")
+    const scale = isTask ? NODE_SCALE : 1.0
+
+    g.setNode(el.id, {
+      label: el.name ?? el.id,
+      width: pe.bounds.width * scale,
+      height: pe.bounds.height * scale,
+    })
+
+    // Establish the parent-child relationship so Dagre puts it in the lane box
+    const laneId = nodeToLane[el.id]
+    if (laneId) g.setParent(el.id, laneId)
+  })
+
+  flowElements
+    .filter((el: any) => el.$type === "bpmn:SequenceFlow")
+    .forEach((flow: any) => {
+      const src = flow.sourceRef?.id
+      const tgt = flow.targetRef?.id
+      if (src && tgt && g.hasNode(src) && g.hasNode(tgt)) {
+        g.setEdge(src, tgt, { id: flow.id })
+      }
+    })
+
+  dagre.layout(g)
+
+  // ── 4. Post-Layout: Size & Position Lanes ────────────────────────────────  
+  // 4a. Find the X boundaries of actual tasks/gateways
+  let minTaskX = Infinity
+  let maxTaskX = -Infinity
+
+  visited.forEach((el: any) => {
+    const isEvent = el.$type?.toLowerCase().includes("event")
+    if (!isEvent) {
+      const n = g.node(el.id)
+      if (n && isFinite(n.x)) {
+        minTaskX = Math.min(minTaskX, n.x)
+        maxTaskX = Math.max(maxTaskX, n.x)
+      }
+    }
+  })
+
+  if (minTaskX === Infinity) minTaskX = 100
+  if (maxTaskX === -Infinity) maxTaskX = 500
+
+  // 4b. Pin Start/End Events to the absolute edges and center them vertically 
+  // in the first lane (Dagre sometimes floats them above if routing is complex)
+  const firstLaneId = lanes.length > 0 ? lanes[0].id : null
+  const firstLaneDagreNode = firstLaneId ? g.node(firstLaneId) : null
+
+  visited.forEach((el: any) => {
+    const n = g.node(el.id)
     if (!n) return
 
-    n.y = laneY + n.height / 2   // center-based positioning
+    if (el.$type?.toLowerCase().includes("startevent")) {
+      n.x = minTaskX - 120  // Push left of the first task
+      if (firstLaneDagreNode) n.y = firstLaneDagreNode.y 
+    } 
+    else if (el.$type?.toLowerCase().includes("endevent")) {
+      n.x = maxTaskX + 120  // Push right of the last task
+      if (firstLaneDagreNode) n.y = firstLaneDagreNode.y
+    }
+  })
+
+  // 4c. Find the global bounding box of ALL flow nodes to size the lanes
+  let minChildX = Infinity
+  let maxChildX = -Infinity
+
+  visited.forEach((el: any) => {
+    const n = g.node(el.id)
+    if (n && isFinite(n.x) && isFinite(n.width)) {
+      minChildX = Math.min(minChildX, n.x - n.width / 2)
+      maxChildX = Math.max(maxChildX, n.x + n.width / 2)
+    }
+  })
+
+  if (minChildX === Infinity) minChildX = 0
+  if (maxChildX === -Infinity) maxChildX = 800
+
+  // 4d. Standardize lane width and position based on the children's spread
+  const paddingX = 60 // Generous padding so nodes don't touch borders
+  const laneLeftEdge = minChildX - paddingX
+  const targetWidth = (maxChildX - minChildX) + (paddingX * 2)
+  const targetCenterX = laneLeftEdge + targetWidth / 2
+
+  const laneChildren: Record<string, string[]> = {}
+  let laneY = 0
+  const laneSpacing = 10 
+
+  lanes.forEach((lane: any) => {
+    laneChildren[lane.id] = (g.children(lane.id) as string[] | undefined) ?? []
+    const n = g.node(lane.id)
+    if (!n) return
+
+    // Lock all lanes to the exact same X and Width
+    n.width = targetWidth
+    n.x = targetCenterX
+
+    // Stack lanes vertically
+    n.height = Math.max(n.height, 120) + 40 // Ensure a minimum height for visibility
+    const newCenterY = laneY + n.height / 2
+    const deltaY = newCenterY - n.y
+    n.y = newCenterY
+
+    // Shift children ONLY on the Y-axis. 
+    // Leaving their X-axis alone preserves Dagre's perfect vertical columns!
+    ;(laneChildren[lane.id] ?? []).forEach((childId: string) => {
+      const cn = g.node(childId)
+      if (cn && isFinite(cn.y)) cn.y += deltaY
+    })
+
     laneY += n.height + laneSpacing
   })
-  
-  const validLaneEdges = lanes .map((lane) => {
-    const n = g2.node(lane.id)
-    return n && isFinite(n.x) && isFinite(n.width) ? n.x - n.width / 2 : null
+  // ── 5. Write bounds back to Moddle elements ───────────────────────────────
+  g.nodes().forEach((nodeId) => {
+    const n = g.node(nodeId)
+    const idx = graphicalDict[nodeId]
+    if (!n || idx === undefined) return
+
+    const pe = planeElements[idx]
+    if (!pe?.bounds) return
+
+    const x = n.x - n.width / 2
+    const y = n.y - n.height / 2
+
+    if (!isFinite(x) || !isFinite(y) || !isFinite(n.width) || !isFinite(n.height)) return
+
+    pe.bounds.x = x
+    pe.bounds.y = y
+    pe.bounds.width = n.width
+    pe.bounds.height = n.height
   })
-  .filter((v): v is number => v !== null)
 
-  if (validLaneEdges.length > 0) {
-    const minEdge = Math.min(...validLaneEdges)
-    lanes.forEach((lane) => {
-      const n = g2.node(lane.id)
-      if (!n) return
-        const currentLeftEdge = n.x - n.width / 2
-        n.x = n.x + (minEdge - currentLeftEdge)
-    })
-  }
-
-  // ── 6. Write node positions back to moddle bounds ─────────────────────────
- g2.nodes().forEach((nodeId) => {
-  const n = g2.node(nodeId)
-  const idx = graphicalDict[nodeId]
-  if (!n || idx === undefined) return
-
-  const pe = planeElements[idx]
-  if (!pe?.bounds) return
-
-  const x = n.x - n.width / 2
-  const y = n.y - n.height / 2
-
-  // Guard: skip if dagre produced non-finite values
-  if (!isFinite(x) || !isFinite(y) || !isFinite(n.width) || !isFinite(n.height)) {
-    console.warn(`Skipping node ${nodeId} — non-finite bounds`, n)
-    return
-  }
-
-  pe.bounds.x = x
-  pe.bounds.y = y
-  pe.bounds.width = n.width
-  pe.bounds.height = n.height
-})
-
-  // ── 6b. Pin start event to a fixed left margin from the lane left edge ──────
-const START_MARGIN = 40  // px gap between lane title bar and start event centre
-
-const startEventEl = flowElements.find((n: any) =>
-  n.$type?.toLowerCase().endsWith("startevent")
-)
-
-if (startEventEl) {
-  const startIdx = graphicalDict[startEventEl.id]
-  const startPe = startIdx !== undefined ? planeElements[startIdx] : null
-
-  if (startPe?.bounds) {
-      // Place the start event's left edge at laneLeftEdge + START_MARGIN
-    startPe.bounds.x = Math.min(...validLaneEdges) + START_MARGIN
-  }
-}
-  // ── 7. Write edge waypoints, cloning metadata from existing waypoints ──────
-  // (same pattern as pm4py's CustomWaypoint clone)
-  g2.edges().forEach((edgeObj) => {
+  // ── 6. Write edge waypoints ──────────────────────────────────────────────
+  g.edges().forEach((edgeObj) => {
     const key = `${edgeObj.v}@${edgeObj.w}`
     const flowId = edgesDict[key]
     const idx = graphicalDict[flowId]
     if (flowId === undefined || idx === undefined) return
 
     const pe = planeElements[idx]
-    const edgeData = g2.edge(edgeObj)
     const referenceWp = pe?.waypoint?.[0]
-    if (!pe || !edgeData?.points || !referenceWp) return
+    if (!pe || !referenceWp) return
 
-    pe.waypoint = edgeData.points.map((p: { x: number; y: number }) => {
-      // Clone all moddle metadata from the reference waypoint
-      // so the serializer doesn't reject the new points
+    const srcNode = g.node(edgeObj.v)
+    const tgtNode = g.node(edgeObj.w)
+    if (!srcNode || !tgtNode) return
+
+    const makeWp = (x: number, y: number) => {
       const wp: any = Object.create(Object.getPrototypeOf(referenceWp))
       Object.assign(wp, referenceWp)
-      wp.x = p.x
-      wp.y = p.y
+      wp.x = x
+      wp.y = y
       return wp
-    })
+    }
+
+    // Determine if the flow is moving forward (left-to-right) or backward
+    const isForward = tgtNode.x >= srcNode.x
+
+    // Connect to the correct faces:
+    // If forward: exit right face of source, enter left face of target.
+    // If backward: exit left face of source, enter right face of target.
+    const srcX = srcNode.x + (isForward ? srcNode.width / 2 : -srcNode.width / 2)
+    const tgtX = tgtNode.x + (isForward ? -tgtNode.width / 2 : tgtNode.width / 2)
+    
+    const srcY = srcNode.y
+    const tgtY = tgtNode.y
+
+    if (Math.abs(srcY - tgtY) < 10) {
+      // Nodes are on the same horizontal plane — straight line
+      pe.waypoint = [makeWp(srcX, srcY), makeWp(tgtX, tgtY)]
+    } else {
+      // Nodes are on different horizontal planes (e.g., crossing lanes)
+      // Create a mid-point elbow that safely drops between the two shapes
+      // rather than overlapping the swimlane borders.
+      const midX = isForward 
+          ? srcX + Math.max(15, (tgtX - srcX) / 2)
+          : srcX - Math.max(15, (srcX - tgtX) / 2)
+          
+      pe.waypoint = [
+        makeWp(srcX, srcY),
+        makeWp(midX, srcY),
+        makeWp(midX, tgtY),
+        makeWp(tgtX, tgtY),
+      ]
+    }
   })
 
-  // ── 8. Re-import the mutated XML to force bpmn-js to re-render ────────────
+  // ── 7. Re-import the mutated XML to force bpmn-js to re-render ────────────
   const { xml: updatedXml } = await (modeler as any).saveXML({ format: false })
   await modeler.importXML(updatedXml)
 }
@@ -439,7 +620,7 @@ function RedoIcon() {
 }
 
 // -------------------------------------------------------------------
-const BpmnViewer = forwardRef(({ xml }: BpmnViewerProps, ref) => {
+const BpmnViewer = forwardRef(({ xml, onNodeClick }: BpmnViewerProps, ref) => {
   const containerRef = useRef<HTMLDivElement>(null)
   const [bpmnModeler, setBpmnModeler] = useState<Modeler | null>(null)
   const [loading, setLoading] = useState<boolean>(false)
@@ -469,7 +650,17 @@ const BpmnViewer = forwardRef(({ xml }: BpmnViewerProps, ref) => {
     })
 
     setBpmnModeler(modeler)
-
+    modeler.on("element.click", (e: any) => {
+      const element = e.element
+      if (element.type != "bpmn:Process" &&
+        element.type !== "bpmn:SequenceFlow" &&
+        element.type !== "bpmn:Lane"){
+          const activityName = element.businessObject?.name
+          if(activityName && onNodeClick) {
+            onNodeClick(activityName)
+          }
+        }
+    })
     //Subscribe to command stack changes for undo/redo state
     const updateUndoRedo = () => {
       const commandStack = modeler.get<any>("commandStack")
@@ -608,15 +799,27 @@ const BpmnViewer = forwardRef(({ xml }: BpmnViewerProps, ref) => {
         console.log(el)
         canvas.addMarker(el.id, "highlighted-node")
         // Scroll the element into view
-        canvas.scrollToElement(el)
+        const viewbox = canvas.viewbox()
+
+        canvas.viewbox({
+          x: el.x - viewbox.width / 2 + (el.width / 2 || 0),
+          y: el.y - viewbox.height / 2 + (el.height / 2 || 0),
+          width: viewbox.width,
+          height: viewbox.height,
+        })
       })
     },
   }))
 
-  //Toolbar separator helper
-   const Sep = () => <div style={{ width: 1, height: 20, background: "#e5e7eb", margin: "0 4px" }} />
   return (
     <div className='w-full h-full flex flex-col'>
+      <style>{`
+        .highlighted-node:not(.djs-connection) .djs-visual > :nth-child(1) {
+          fill: #dbeafe !important;       /* Light blue background */
+          stroke: #2563eb !important;     /* Dark blue border */
+          stroke-width: 4px !important;   /* Thicker border */
+        }
+      `}</style>
       {/* Controls */}
       <div className='bg-white border-b p-4 flex gap-2'>
         <Button

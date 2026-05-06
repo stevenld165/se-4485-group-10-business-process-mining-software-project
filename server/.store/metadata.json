@@ -408,5 +408,35 @@
     "bundle_id": "f54dc38c-230e-4221-9d33-18307a66f836",
     "attached_to": null,
     "storage_subdir": "BPMN"
+  },
+  "4cd0e442-eb70-4d0f-952c-4d269af061aa": {
+    "id": "4cd0e442-eb70-4d0f-952c-4d269af061aa",
+    "type": "OCEL",
+    "format": "parquet",
+    "source_file": "HR_Onboarding_OCEL.csv",
+    "created_at": "2026-05-06T00:07:13.665513",
+    "bundle_id": "1668e1b0-9b47-44ce-8dac-34a719154172",
+    "attached_to": null,
+    "storage_subdir": "OCEL"
+  },
+  "410cabc0-5c14-432a-a181-15bb4007203a": {
+    "id": "410cabc0-5c14-432a-a181-15bb4007203a",
+    "type": "CCEL",
+    "format": "parquet",
+    "source_file": "sub_log_4cd0e442-eb70-4d0f-952c-4d269af061aa",
+    "created_at": "2026-05-06T00:07:13.809371",
+    "bundle_id": "1668e1b0-9b47-44ce-8dac-34a719154172",
+    "attached_to": null,
+    "storage_subdir": "CCEL"
+  },
+  "d70baa37-8cf7-49cb-a456-cb42a52cd5b8": {
+    "id": "d70baa37-8cf7-49cb-a456-cb42a52cd5b8",
+    "type": "Swimlane",
+    "format": "bpmn",
+    "source_file": "swimlane_4cd0e442-eb70-4d0f-952c-4d269af061aa",
+    "created_at": "2026-05-06T00:07:15.101732",
+    "bundle_id": "1668e1b0-9b47-44ce-8dac-34a719154172",
+    "attached_to": null,
+    "storage_subdir": "BPMN"
   }
 }
