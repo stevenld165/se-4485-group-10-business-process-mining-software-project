@@ -15,10 +15,14 @@ import "bpmn-js/dist/assets/bpmn-js.css"
 import { Button } from "./ui/button"
 
 import dagre from "dagre"
+import { useProcessFile } from "@/app/hooks/useProcessFile"
+import { useUploadHistory } from "@/app/hooks/useUploadhistory"
 
 interface BpmnViewerProps {
   xml?: string
   onNodeClick?: (activityName: string) => void
+  onSaveUpdatedBpmn: (xml: string) => void
+  runAutoLayout: boolean
 }
 
 export interface BpmnViewerHandle {
@@ -223,13 +227,13 @@ async function applyDagreLayout(modeler: Modeler): Promise<void> {
       })
     })
   })
-// ── Helper: run one dagre pass and return the graph ───────────────────────
+  // ── Helper: run one dagre pass and return the graph ───────────────────────
   const lanes: any[] = laneSets.flatMap((ls: any) => ls.lanes ?? [])
-  if(lanes.length === 0) {
+  if (lanes.length === 0) {
     console.warn("No lanes found in BPMN diagram — skipping layout")
     return
   }
-  
+
   const runDagre = (
     forcedLaneWidth?: number,
     forcedLaneHeight?: number,
@@ -254,13 +258,15 @@ async function applyDagreLayout(modeler: Modeler): Promise<void> {
     })
 
     // Add flow nodes — always use their ORIGINAL bounds, never scale them
-    const NODE_SCALE = 1.6  // increase to make tasks bigger; 1.0 = original size
+    const NODE_SCALE = 1.6 // increase to make tasks bigger; 1.0 = original size
 
     visited.forEach((el: any) => {
       const pe = planeElements[graphicalDict[el.id]]
       if (!pe?.bounds) return
 
-      const isTask = el.$type?.toLowerCase().includes("task") || el.$type?.toLowerCase().includes("subprocess")
+      const isTask =
+        el.$type?.toLowerCase().includes("task") ||
+        el.$type?.toLowerCase().includes("subprocess")
       const scale = isTask ? NODE_SCALE : 1.0
 
       g.setNode(el.id, {
@@ -322,72 +328,78 @@ async function applyDagreLayout(modeler: Modeler): Promise<void> {
   })
 
   let laneY = 0
-  const laneSpacing = 20  // optional gap between lanes
+  const laneSpacing = 20 // optional gap between lanes
 
   lanes.forEach((lane: any) => {
     const n = g2.node(lane.id)
     if (!n) return
 
-    n.y = laneY + n.height / 2   // center-based positioning
+    n.y = laneY + n.height / 2 // center-based positioning
     laneY += n.height + laneSpacing
   })
-  
-  const validLaneEdges = lanes .map((lane) => {
-    const n = g2.node(lane.id)
-    return n && isFinite(n.x) && isFinite(n.width) ? n.x - n.width / 2 : null
-  })
-  .filter((v): v is number => v !== null)
+
+  const validLaneEdges = lanes
+    .map((lane) => {
+      const n = g2.node(lane.id)
+      return n && isFinite(n.x) && isFinite(n.width) ? n.x - n.width / 2 : null
+    })
+    .filter((v): v is number => v !== null)
 
   if (validLaneEdges.length > 0) {
     const minEdge = Math.min(...validLaneEdges)
     lanes.forEach((lane) => {
       const n = g2.node(lane.id)
       if (!n) return
-        const currentLeftEdge = n.x - n.width / 2
-        n.x = n.x + (minEdge - currentLeftEdge)
+      const currentLeftEdge = n.x - n.width / 2
+      n.x = n.x + (minEdge - currentLeftEdge)
     })
   }
 
   // ── 6. Write node positions back to moddle bounds ─────────────────────────
- g2.nodes().forEach((nodeId) => {
-  const n = g2.node(nodeId)
-  const idx = graphicalDict[nodeId]
-  if (!n || idx === undefined) return
+  g2.nodes().forEach((nodeId) => {
+    const n = g2.node(nodeId)
+    const idx = graphicalDict[nodeId]
+    if (!n || idx === undefined) return
 
-  const pe = planeElements[idx]
-  if (!pe?.bounds) return
+    const pe = planeElements[idx]
+    if (!pe?.bounds) return
 
-  const x = n.x - n.width / 2
-  const y = n.y - n.height / 2
+    const x = n.x - n.width / 2
+    const y = n.y - n.height / 2
 
-  // Guard: skip if dagre produced non-finite values
-  if (!isFinite(x) || !isFinite(y) || !isFinite(n.width) || !isFinite(n.height)) {
-    console.warn(`Skipping node ${nodeId} — non-finite bounds`, n)
-    return
-  }
+    // Guard: skip if dagre produced non-finite values
+    if (
+      !isFinite(x) ||
+      !isFinite(y) ||
+      !isFinite(n.width) ||
+      !isFinite(n.height)
+    ) {
+      console.warn(`Skipping node ${nodeId} — non-finite bounds`, n)
+      return
+    }
 
-  pe.bounds.x = x
-  pe.bounds.y = y
-  pe.bounds.width = n.width
-  pe.bounds.height = n.height
-})
+    pe.bounds.x = x
+    pe.bounds.y = y
+    pe.bounds.width = n.width
+    pe.bounds.height = n.height
+  })
 
   // ── 6b. Pin start event to a fixed left margin from the lane left edge ──────
-const START_MARGIN = 40  // px gap between lane title bar and start event centre
+  const START_MARGIN = 40 // px gap between lane title bar and start event centre
 
-const startEventEl = flowElements.find((n: any) =>
-  n.$type?.toLowerCase().endsWith("startevent")
-)
+  const startEventEl = flowElements.find((n: any) =>
+    n.$type?.toLowerCase().endsWith("startevent"),
+  )
 
-if (startEventEl) {
-  const startIdx = graphicalDict[startEventEl.id]
-  const startPe = startIdx !== undefined ? planeElements[startIdx] : null
+  if (startEventEl) {
+    const startIdx = graphicalDict[startEventEl.id]
+    const startPe = startIdx !== undefined ? planeElements[startIdx] : null
 
-  if (startPe?.bounds) {
+    if (startPe?.bounds) {
       // Place the start event's left edge at laneLeftEdge + START_MARGIN
-    startPe.bounds.x = Math.min(...validLaneEdges) + START_MARGIN
+      startPe.bounds.x = Math.min(...validLaneEdges) + START_MARGIN
+    }
   }
-}
   // ── 7. Write edge waypoints, cloning metadata from existing waypoints ──────
   // (same pattern as pm4py's CustomWaypoint clone)
   g2.edges().forEach((edgeObj) => {
@@ -417,20 +429,33 @@ if (startEventEl) {
   await modeler.importXML(updatedXml)
 }
 
-
 // ── Icon helpers (keeps JSX clean) ────────────────────────────────────────────
 function UndoIcon() {
   return (
-    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" width="14" height="14">
+    <svg
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      width="14"
+      height="14"
+    >
       <path d="M3 7H11a3 3 0 0 1 0 6H8" />
       <path d="M6 4L3 7l3 3" />
     </svg>
   )
 }
- 
+
 function RedoIcon() {
   return (
-    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" width="14" height="14">
+    <svg
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      width="14"
+      height="14"
+    >
       <path d="M13 7H5a3 3 0 0 0 0 6h3" />
       <path d="M10 4l3 3-3 3" />
     </svg>
@@ -438,218 +463,228 @@ function RedoIcon() {
 }
 
 // -------------------------------------------------------------------
-const BpmnViewer = forwardRef(({ xml, onNodeClick }: BpmnViewerProps, ref) => {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const [bpmnModeler, setBpmnModeler] = useState<Modeler | null>(null)
-  const [loading, setLoading] = useState<boolean>(false)
-  const [error, setError] = useState<string | null>(null)
-  const [canUndo, setCanUndo] = useState(false)
-  const [canRedo, setCanRedo] = useState(false)
+const BpmnViewer = forwardRef(
+  (
+    { xml, onNodeClick, onSaveUpdatedBpmn, runAutoLayout }: BpmnViewerProps,
+    ref,
+  ) => {
+    const containerRef = useRef<HTMLDivElement>(null)
+    const [bpmnModeler, setBpmnModeler] = useState<Modeler | null>(null)
+    const [loading, setLoading] = useState<boolean>(false)
+    const [error, setError] = useState<string | null>(null)
+    const [canUndo, setCanUndo] = useState(false)
+    const [canRedo, setCanRedo] = useState(false)
 
-  // Initialize bpmn-js Modeler
-  useEffect(() => {
-    if (!containerRef.current) return
+    // Initialize bpmn-js Modeler
+    useEffect(() => {
+      if (!containerRef.current) return
 
-    // Create Modeler instance
-    const modeler = new Modeler({
-      container: containerRef.current,
-      textRenderer: {
-        defaultStyle: {
-          fontFamily: "Arial, sans-serif",
-          fontSize: "20px",
-          fontWeight:"Bold",
+      // Create Modeler instance
+      const modeler = new Modeler({
+        container: containerRef.current,
+        textRenderer: {
+          defaultStyle: {
+            fontFamily: "Arial, sans-serif",
+            fontSize: "20px",
+            fontWeight: "Bold",
+          },
+          externalStyle: {
+            fontFamily: "Arial, sans-serif",
+            fontSize: "20px",
+            fontWeight: "Bold",
+          },
         },
-        externalStyle: {
-          fontFamily: "Arial, sans-serif",
-          fontSize: "20px",
-          fontWeight:"Bold",
-        },
-      },
-    })
+      })
 
-    setBpmnModeler(modeler)
-    modeler.on("element.click", (e: any) => {
-      const element = e.element
-      if (element.type != "bpmn:Process" &&
-        element.type !== "bpmn:SequenceFlow" &&
-        element.type !== "bpmn:Lane"){
+      setBpmnModeler(modeler)
+      modeler.on("element.click", (e: any) => {
+        const element = e.element
+        if (
+          element.type != "bpmn:Process" &&
+          element.type !== "bpmn:SequenceFlow" &&
+          element.type !== "bpmn:Lane"
+        ) {
           const activityName = element.businessObject?.name
-          if(activityName && onNodeClick) {
+          if (activityName && onNodeClick) {
             onNodeClick(activityName)
           }
         }
-    })
-    //Subscribe to command stack changes for undo/redo state
-    const updateUndoRedo = () => {
-      const commandStack = modeler.get<any>("commandStack")
-      setCanUndo(commandStack.canUndo())
-      setCanRedo(commandStack.canRedo())
-    }
-
-    modeler.on("commandStack.changed", updateUndoRedo)
-
-    // Cleanup function
-    return () => {
-      modeler.off("commandStack.changed", updateUndoRedo)
-      modeler.destroy()
-    }
-  }, [])
-
-  // Fetch BPMN from API and render
-   const loadBpmnDiagram = async () => {
-    if (!bpmnModeler) return
-
-    setLoading(true)
-    setError(null)
-
-    try {
-      if (!xml) return
-
-      const parser = new DOMParser()
-      const doc = parser.parseFromString(xml, "application/xml")
-      const BPMN = "http://www.omg.org/spec/BPMN/20100524/MODEL"
-      const processEl = doc.getElementsByTagNameNS(BPMN, "process")[0]
-      const actorMapRaw = processEl?.getAttribute("data-role-map")
-      const actorToActivities: Record<string, string[]> = actorMapRaw
-        ? JSON.parse(actorMapRaw)
-        : {}
-
-      const haslanes = Object.keys(actorToActivities).length > 0
-      const enrichedXml =
-        Object.keys(actorToActivities).length > 0
-          ? injectLanes(xml, actorToActivities)
-          : xml
-
-      await bpmnModeler.importXML(enrichedXml)
-      if (haslanes) {
-        await applyDagreLayout(bpmnModeler)
-        console.log("Applied custom layout with lanes")
+      })
+      //Subscribe to command stack changes for undo/redo state
+      const updateUndoRedo = () => {
+        const commandStack = modeler.get<any>("commandStack")
+        setCanUndo(commandStack.canUndo())
+        setCanRedo(commandStack.canRedo())
       }
-      
 
-      const canvas = bpmnModeler.get("canvas") as any
-      const elementRegistry = bpmnModeler.get("elementRegistry") as any
+      modeler.on("commandStack.changed", updateUndoRedo)
 
-      // Get all start events (usually just one)
-      const startEvents = elementRegistry.filter(
-        (element: any) => element.type === "bpmn:StartEvent"
-      )
-
-      if (startEvents.length > 0) {
-        const startNode = startEvents[0]
-        
-
-        canvas.zoom(1.2)
-
-        // 2. Get the updated viewbox size after zooming
-        const viewbox = canvas.viewbox()
-        const horizontalOffset = viewbox.width * 0.25;
-        const verticalOffset = viewbox.height * 0.5;
-
-        // 3. Calculate new X and Y to center the screen on the start node
-        viewbox.x = startNode.x - horizontalOffset / 2 + (startNode.width / 2 || 0)
-        viewbox.y = startNode.y - verticalOffset / 2 + (startNode.height / 2 || 0)
-
-        // 4. Apply the centered viewbox
-        canvas.viewbox(viewbox)
-      } else {
-        // Fallback: If no start event exists, just fit the whole viewport
-        canvas.zoom("fit-viewport", "auto")
+      // Cleanup function
+      return () => {
+        modeler.off("commandStack.changed", updateUndoRedo)
+        modeler.destroy()
       }
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to load BPMN diagram",
-      )
-      console.error("Error loading BPMN:", err)
-    } finally {
-      setLoading(false)
-    }
-  }
+    }, [])
 
-  // Load diagram when modeler is ready
-  useEffect(() => {
-    if (bpmnModeler) {
-      loadBpmnDiagram()
-    }
-  }, [bpmnModeler, xml])
-
-  // Undo/Redo via bpmn-js modeling API
-  const handleUndo = () => {
-    if (!bpmnModeler) return
-    const commandStack = bpmnModeler.get<any>("commandStack")
-    if (commandStack.canUndo()) commandStack.undo()
-  }
- 
-  const handleRedo = () => {
-    if (!bpmnModeler) return
-    const commandStack = bpmnModeler.get<any>("commandStack")
-    if (commandStack.canRedo()) commandStack.redo()
-  }
-
-  useImperativeHandle(ref, () => ({
-    highlightActivity: (activityName: string | null) => {
+    // Fetch BPMN from API and render
+    const loadBpmnDiagram = async () => {
       if (!bpmnModeler) return
 
-      console.log("attempting to highlight: ", activityName)
+      setLoading(true)
+      setError(null)
 
-      const elementRegistry = bpmnModeler.get<any>("elementRegistry")
-      const canvas = bpmnModeler.get<any>("canvas")
+      try {
+        if (!xml) return
 
-      // Clear all previous highlights
-      elementRegistry.getAll().forEach((el: any) => {
-        if (el.type !== "bpmn:SequenceFlow") {
-          canvas.removeMarker(el.id, "highlighted-node")
+        const parser = new DOMParser()
+        const doc = parser.parseFromString(xml, "application/xml")
+        const BPMN = "http://www.omg.org/spec/BPMN/20100524/MODEL"
+        const processEl = doc.getElementsByTagNameNS(BPMN, "process")[0]
+        const actorMapRaw = processEl?.getAttribute("data-role-map")
+        const actorToActivities: Record<string, string[]> = actorMapRaw
+          ? JSON.parse(actorMapRaw)
+          : {}
+
+        if (runAutoLayout) {
+          const haslanes = Object.keys(actorToActivities).length > 0
+          const enrichedXml =
+            Object.keys(actorToActivities).length > 0
+              ? injectLanes(xml, actorToActivities)
+              : xml
+
+          await bpmnModeler.importXML(enrichedXml)
+          if (haslanes) {
+            await applyDagreLayout(bpmnModeler)
+            console.log("Applied custom layout with lanes")
+          }
+        } else {
+          await bpmnModeler.importXML(xml)
         }
-      })
 
-      if (!activityName) return
+        const canvas = bpmnModeler.get("canvas") as any
+        const elementRegistry = bpmnModeler.get("elementRegistry") as any
 
-      // Find element(s) whose name matches the activity
-      const matches = elementRegistry
-        .getAll()
-        .filter(
-          (el: any) =>
-            el.businessObject?.name === activityName &&
-            el.type !== "bpmn:SequenceFlow",
+        // Get all start events (usually just one)
+        const startEvents = elementRegistry.filter(
+          (element: any) => element.type === "bpmn:StartEvent",
         )
 
-      matches.forEach((el: any) => {
-        console.log(el)
-        canvas.addMarker(el.id, "highlighted-node")
-        // Scroll the element into view
-        const viewbox = canvas.viewbox()
+        if (startEvents.length > 0) {
+          const startNode = startEvents[0]
 
-        canvas.viewbox({
-          x: el.x - viewbox.width / 2 + (el.width / 2 || 0),
-          y: el.y - viewbox.height / 2 + (el.height / 2 || 0),
-          width: viewbox.width,
-          height: viewbox.height,
+          canvas.zoom(1.2)
+
+          // 2. Get the updated viewbox size after zooming
+          const viewbox = canvas.viewbox()
+          const horizontalOffset = viewbox.width * 0.25
+          const verticalOffset = viewbox.height * 0.5
+
+          // 3. Calculate new X and Y to center the screen on the start node
+          viewbox.x =
+            startNode.x - horizontalOffset / 2 + (startNode.width / 2 || 0)
+          viewbox.y =
+            startNode.y - verticalOffset / 2 + (startNode.height / 2 || 0)
+
+          // 4. Apply the centered viewbox
+          canvas.viewbox(viewbox)
+        } else {
+          // Fallback: If no start event exists, just fit the whole viewport
+          canvas.zoom("fit-viewport", "auto")
+        }
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Failed to load BPMN diagram",
+        )
+        console.error("Error loading BPMN:", err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    // Load diagram when modeler is ready
+    useEffect(() => {
+      if (bpmnModeler) {
+        loadBpmnDiagram()
+      }
+    }, [bpmnModeler, xml])
+
+    // Undo/Redo via bpmn-js modeling API
+    const handleUndo = () => {
+      if (!bpmnModeler) return
+      const commandStack = bpmnModeler.get<any>("commandStack")
+      if (commandStack.canUndo()) commandStack.undo()
+    }
+
+    const handleRedo = () => {
+      if (!bpmnModeler) return
+      const commandStack = bpmnModeler.get<any>("commandStack")
+      if (commandStack.canRedo()) commandStack.redo()
+    }
+
+    useImperativeHandle(ref, () => ({
+      highlightActivity: (activityName: string | null) => {
+        if (!bpmnModeler) return
+
+        console.log("attempting to highlight: ", activityName)
+
+        const elementRegistry = bpmnModeler.get<any>("elementRegistry")
+        const canvas = bpmnModeler.get<any>("canvas")
+
+        // Clear all previous highlights
+        elementRegistry.getAll().forEach((el: any) => {
+          if (el.type !== "bpmn:SequenceFlow") {
+            canvas.removeMarker(el.id, "highlighted-node")
+          }
         })
-      })
-    },
-  }))
 
-  return (
-    <div className='w-full h-full flex flex-col'>
-      <style>{`
+        if (!activityName) return
+
+        // Find element(s) whose name matches the activity
+        const matches = elementRegistry
+          .getAll()
+          .filter(
+            (el: any) =>
+              el.businessObject?.name === activityName &&
+              el.type !== "bpmn:SequenceFlow",
+          )
+
+        matches.forEach((el: any) => {
+          console.log(el)
+          canvas.addMarker(el.id, "highlighted-node")
+          // Scroll the element into view
+          const viewbox = canvas.viewbox()
+
+          canvas.viewbox({
+            x: el.x - viewbox.width / 2 + (el.width / 2 || 0),
+            y: el.y - viewbox.height / 2 + (el.height / 2 || 0),
+            width: viewbox.width,
+            height: viewbox.height,
+          })
+        })
+      },
+    }))
+
+    return (
+      <div className="w-full h-full flex flex-col">
+        <style>{`
         .highlighted-node:not(.djs-connection) .djs-visual > :nth-child(1) {
           fill: #dbeafe !important;       /* Light blue background */
           stroke: #2563eb !important;     /* Dark blue border */
           stroke-width: 4px !important;   /* Thicker border */
         }
       `}</style>
-      {/* Controls */}
-      <div className='bg-white border-b p-4 flex gap-2'>
-        <Button
-          onClick={loadBpmnDiagram}
-          disabled={loading}
-          className='px-4 py-2 bg-blue-500 text-white hover:bg-blue-600 disabled:bg-gray-400'
-        >
-          {loading ? "Loading..." : "Refresh Diagram"}
-        </Button>
+        {/* Controls */}
+        <div className="bg-white border-b p-4 flex gap-2">
+          <Button
+            onClick={loadBpmnDiagram}
+            disabled={loading}
+            className="px-4 py-2 bg-blue-500 text-white hover:bg-blue-600 disabled:bg-gray-400"
+          >
+            {loading ? "Loading..." : "Refresh Diagram"}
+          </Button>
 
-        {/* Optional: Download button */}
-        <Button
+          {/* Optional: Download button */}
+          {/* <Button
           onClick={async () => {
             try {
               const { svg } = await bpmnModeler!.saveSVG()
@@ -667,88 +702,100 @@ const BpmnViewer = forwardRef(({ xml, onNodeClick }: BpmnViewerProps, ref) => {
           className='px-4 py-2 bg-green-500 text-white hover:bg-green-600'
         >
           Download Diagram
-        </Button>
-        <Button
-          onClick={async () => {
-            try {
-              const { svg } = await bpmnModeler!.saveSVG()
-              const blob = new Blob([svg], { type: "image/svg+xml" })
+        </Button> */}
+          <Button
+            onClick={async () => {
+              const { xml } = await bpmnModeler!.saveXML()
 
-              const clipboardItem = new ClipboardItem({
-                [blob.type]: blob,
-              })
+              if (xml) onSaveUpdatedBpmn(xml)
+            }}
+            className="px-4 py-2 bg-green-500 text-white hover:bg-green-600"
+          >
+            Save Edited Diagram
+          </Button>
+          <Button
+            onClick={async () => {
+              try {
+                const { svg } = await bpmnModeler!.saveSVG()
+                const blob = new Blob([svg], { type: "image/svg+xml" })
 
-              await navigator.clipboard.write([clipboardItem])
-            } catch (err) {
-              console.error("Failed to save diagram:", err)
+                const clipboardItem = new ClipboardItem({
+                  [blob.type]: blob,
+                })
+
+                await navigator.clipboard.write([clipboardItem])
+              } catch (err) {
+                console.error("Failed to save diagram:", err)
+              }
+            }}
+            className="px-4 py-2 bg-green-500 text-white hover:bg-green-600"
+          >
+            Copy Diagram
+          </Button>
+          {/* Zoom controls */}
+          <Button
+            onClick={() => (bpmnModeler?.get("zoomScroll") as any)?.stepZoom(1)}
+            disabled={!bpmnModeler}
+            className="px-4 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200"
+          >
+            +
+          </Button>
+
+          <Button
+            onClick={() =>
+              (bpmnModeler?.get("zoomScroll") as any)?.stepZoom(-1)
             }
-          }}
-          className='px-4 py-2 bg-green-500 text-white hover:bg-green-600'
-        >
-          Copy Diagram
-        </Button>
-        {/* Zoom controls */}
-        <Button
-          onClick={() => (bpmnModeler?.get("zoomScroll") as any)?.stepZoom(1)}
-          disabled={!bpmnModeler}
-          className='px-4 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200'
-        >
-          +
-        </Button>
+            disabled={!bpmnModeler}
+            className="px-4 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200"
+          >
+            -
+          </Button>
+          {/* Fit button */}
+          <Button
+            onClick={() =>
+              (bpmnModeler?.get("canvas") as any)?.zoom("fit-viewport", "auto")
+            }
+            disabled={!bpmnModeler}
+            className="px-4 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200"
+          >
+            Fit
+          </Button>
 
-        <Button
-          onClick={() => (bpmnModeler?.get("zoomScroll") as any)?.stepZoom(-1)}
-          disabled={!bpmnModeler}
-          className='px-4 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200'
-        >
-          -
-        </Button>
-        {/* Fit button */}
-        <Button
-          onClick={() => (bpmnModeler?.get("canvas") as any)?.zoom("fit-viewport", "auto")}
-          disabled={!bpmnModeler}
-          className='px-4 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200'
-        >
-          Fit
-        </Button>
-
-        {/*Undo button */}
-        <Button
-          onClick={handleUndo}
-          disabled={!canUndo}
-          title="Undo (Ctrl+Z)"
-          className="flex items-center gap-1.5 px-3 py-2 bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100 disabled:opacity-40"
-        >
-          <UndoIcon />
-          <span className="text-xs">Undo</span>
-        </Button>
-        {/*Redo Button */}
-        <Button
-          onClick={handleRedo}
-          disabled={!canRedo}
-          title="Redo (Ctrl+Shift+Z)"
-          className="flex items-center gap-1.5 px-3 py-2 bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100 disabled:opacity-40"
-        >
-          <RedoIcon />
-          <span className="text-xs">Redo</span>
-        </Button>
-      </div>
-
-      {/* Error display */}
-      {error && (
-        <div className='bg-red-100 border border-red-400 text-red-700 px-4 py-3 m-4 rounded'>
-          {error}
+          {/*Undo button */}
+          <Button
+            onClick={handleUndo}
+            disabled={!canUndo}
+            title="Undo (Ctrl+Z)"
+            className="flex items-center gap-1.5 px-3 py-2 bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100 disabled:opacity-40"
+          >
+            <UndoIcon />
+            <span className="text-xs">Undo</span>
+          </Button>
+          {/*Redo Button */}
+          <Button
+            onClick={handleRedo}
+            disabled={!canRedo}
+            title="Redo (Ctrl+Shift+Z)"
+            className="flex items-center gap-1.5 px-3 py-2 bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100 disabled:opacity-40"
+          >
+            <RedoIcon />
+            <span className="text-xs">Redo</span>
+          </Button>
         </div>
-      )}
 
-      {/* BPMN container */}
-      <div
-        ref={containerRef}
-        className='flex-1 min-h-0 w-full bg-gray-50'
-      />
-    </div>
-  )
-})
+        {/* Error display */}
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 m-4 rounded">
+            {error}
+          </div>
+        )}
+
+        {/* BPMN container */}
+        <div ref={containerRef} className="flex-1 min-h-0 w-full bg-gray-50" />
+      </div>
+    )
+  },
+)
 
 BpmnViewer.displayName = "BpmnViewer"
 export default BpmnViewer

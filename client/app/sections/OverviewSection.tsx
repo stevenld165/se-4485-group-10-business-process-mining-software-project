@@ -14,6 +14,8 @@ interface OverviewSectionProps {
   viewerRef: RefObject<BpmnViewerHandle | null>
   bpmnMaximized: boolean
   onBpmnMaximizedChange: (value: boolean) => void
+  onSaveUpdatedBpmn: (xml: string) => void
+  isEdited: boolean
 }
 
 export default function OverviewSection({
@@ -24,12 +26,16 @@ export default function OverviewSection({
   viewerRef,
   bpmnMaximized,
   onBpmnMaximizedChange,
+  onSaveUpdatedBpmn,
+  isEdited,
 }: OverviewSectionProps) {
   const [leftPercent, setLeftPercent] = useState(35)
   const containerRef = useRef<HTMLDivElement>(null)
   const dragging = useRef(false)
   const [selectedActivity, setSelectedActivity] = useState<string | null>(null)
-  const [selectedRowIndex, setSelectedRowIndex] = useState<EventLogRow | null>(null)
+  const [selectedRowIndex, setSelectedRowIndex] = useState<EventLogRow | null>(
+    null,
+  )
 
   const onPointerDown = useCallback((e: React.PointerEvent) => {
     e.preventDefault()
@@ -51,13 +57,15 @@ export default function OverviewSection({
   }, [])
 
   const handleRowClick = (row: EventLogRow) => {
-    const activityKey = Object.keys(row).find((key) => key.toLowerCase().includes("activity"))
+    const activityKey = Object.keys(row).find((key) =>
+      key.toLowerCase().includes("activity"),
+    )
     const activity = activityKey ? String(row[activityKey]) : null
     if (selectedRowIndex === row) {
       setSelectedActivity(null)
       setSelectedRowIndex(null)
       viewerRef.current?.highlightActivity(null)
-    }else {
+    } else {
       setSelectedActivity(activity)
       setSelectedRowIndex(row)
       viewerRef.current?.highlightActivity(activity)
@@ -76,12 +84,13 @@ export default function OverviewSection({
       <div className={styles.header}>
         <h2 className={styles.title}>Overview</h2>
         <p className={styles.subtitle}>
-          {bpmnMaximized ? "BPMN diagram — expanded view" : "Drag the divider to resize panels"}
+          {bpmnMaximized
+            ? "BPMN diagram — expanded view"
+            : "Drag the divider to resize panels"}
         </p>
       </div>
 
       <div ref={containerRef} className={styles.panelGroup}>
-
         {/* Left: event log panel(s) — hidden when BPMN is maximized */}
         {!bpmnMaximized && (
           <>
@@ -176,14 +185,15 @@ export default function OverviewSection({
             </span>
           </div>
           <div className={styles.panelBody}>
-            <BpmnViewer 
-            xml={xml} 
-            ref={viewerRef}
-            onNodeClick={handleDiagramClick}
+            <BpmnViewer
+              xml={xml}
+              ref={viewerRef}
+              onNodeClick={handleDiagramClick}
+              onSaveUpdatedBpmn={onSaveUpdatedBpmn}
+              runAutoLayout={!isEdited}
             />
           </div>
         </div>
-
       </div>
     </div>
   )

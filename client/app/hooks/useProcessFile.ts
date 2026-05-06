@@ -12,17 +12,18 @@ export interface ProcessResult {
   bundleId: string
   bpmnXml: string
   ccelData: EventLogRow[]
-  ocelData: EventLogRow[] | null   // null = input was already CCEL
+  ocelData: EventLogRow[] | null // null = input was already CCEL
   roles: Record<string, string[]>
+  isEdited?: boolean
 }
 
 // ── Error types returned as user-visible warnings ─────────────────────────────
 
 export type ProcessErrorKind =
-  | "unsupported_format"   // 400 — file extension not accepted
-  | "invalid_structure"    // 422 — columns don't match OCEL or CCEL
-  | "processing_error"     // 500 — internal server failure
-  | "network_error"        // fetch failed entirely
+  | "unsupported_format" // 400 — file extension not accepted
+  | "invalid_structure" // 422 — columns don't match OCEL or CCEL
+  | "processing_error" // 500 — internal server failure
+  | "network_error" // fetch failed entirely
 
 export interface ProcessError {
   kind: ProcessErrorKind
@@ -71,21 +72,22 @@ export function useProcessFile(): UseProcessFileReturn {
         }
 
         const kind: ProcessErrorKind =
-          response.status === 400 ? "unsupported_format"
-          : response.status === 422 ? "invalid_structure"
-          : "processing_error"
+          response.status === 400
+            ? "unsupported_format"
+            : response.status === 422
+              ? "invalid_structure"
+              : "processing_error"
 
         setError({ kind, message: detail })
         return null
       }
 
-      const blob = await response.blob()  
-      const text = await blob.text()          
-      const json = JSON.parse(text)                    
+      const blob = await response.blob()
+      const text = await blob.text()
+      const json = JSON.parse(text)
       const parsed = _parseBackendResponse(json)
       setResult(parsed)
       return parsed
-
     } catch (err) {
       setError({
         kind: "network_error",
@@ -134,7 +136,9 @@ function _normaliseRows(raw: any): EventLogRow[] {
   // orient="split" gives { columns, data } — handle both
   if (raw.data && raw.columns) {
     return (raw.data as any[][]).map((row) =>
-      Object.fromEntries(raw.columns.map((col: string, i: number) => [col, row[i]]))
+      Object.fromEntries(
+        raw.columns.map((col: string, i: number) => [col, row[i]]),
+      ),
     )
   }
   return []

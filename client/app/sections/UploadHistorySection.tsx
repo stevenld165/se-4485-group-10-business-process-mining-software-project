@@ -31,13 +31,18 @@ export default function UploadHistorySection({
   onClear,
   mounted,
 }: UploadHistorySectionProps) {
+  const sortedHistory = history.sort(
+    (a, b) =>
+      new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime(),
+  )
+
   return (
     <div className={styles.wrapper}>
       <div className={styles.header}>
         <div>
-          <h2 className={styles.title}>Upload History</h2>
+          <h2 className={styles.title}>Saved Diagrams</h2>
           <p className={styles.subtitle}>
-            Previously uploaded event logs — click one to restore it
+            Previously uploaded event logs & diagrams — click one to restore it
           </p>
         </div>
         {mounted && history.length > 0 && (
@@ -64,7 +69,7 @@ export default function UploadHistorySection({
         </div>
       ) : (
         <ul className={styles.list}>
-          {history.map((record) => (
+          {sortedHistory.map((record) => (
             <li key={record.id} className={styles.card}>
               <button
                 className={styles.cardBody}

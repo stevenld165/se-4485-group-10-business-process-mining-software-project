@@ -58,7 +58,35 @@ export function useUploadHistory() {
     setHistory((prev) => prev.filter((r) => r.id !== id))
   }
 
+  const updateRecord = (id: string, xml: string) => {
+    const updatedHistory = history.map((record) => {
+      if (record.id == id) {
+        const updatedResult = {
+          ...record.savedResult,
+          bpmnXml: xml,
+          isEdited: true,
+        }
+        const updatedRecord: UploadRecord = {
+          ...record,
+          uploadedAt: new Date().toISOString(),
+          savedResult: updatedResult,
+        }
+
+        return updatedRecord
+      } else return record
+    })
+
+    setHistory(updatedHistory)
+  }
+
   const clearHistory = () => setHistory([])
 
-  return { history, addRecord, removeRecord, clearHistory, mounted }
+  return {
+    history,
+    addRecord,
+    removeRecord,
+    updateRecord,
+    clearHistory,
+    mounted,
+  }
 }
