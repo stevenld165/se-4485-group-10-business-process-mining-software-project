@@ -1147,6 +1147,4 @@ node_modules/update-browserslist-db/index.js
 node_modules/update-browserslist-db/LICENSE
 node_modules/update-browserslist-db/README.md
 node_modules/update-browserslist-db/utils.js
-server/main.py
-server/main.py
 *.asar
