@@ -13,7 +13,7 @@ import ErrorModal from "@/components/ErrorModal"
 import OverviewSection from "./sections/OverviewSection"
 import styles from "./ClientPage.module.css"
 
-type Section = "overview" | "eventlog" | "bpmn" | "history"
+type Section = "overview" | "eventlog" | "history"
 
 export default function ClientPage() {
   const { result, isLoading, error, processFile, loadFromRecord, clearError } =
@@ -40,7 +40,7 @@ export default function ClientPage() {
       savedResult: processed,
     })
     setActiveSection("overview")
-    setBpmnMaximized(false)
+    setBpmnMaximized(true)
   }
   setIsUploadOpen(false)
 }

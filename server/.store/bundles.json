@@ -235,5 +235,43 @@
       "CCEL": "9943aa4c-6861-4cd0-8965-93a22c7cb68a",
       "Swimlane": "72c050e7-580b-4bb4-8564-6b137048f43b"
     }
+  },
+  "a01f96f9-057c-4b21-b48a-f6064b06187a": {
+    "id": "a01f96f9-057c-4b21-b48a-f6064b06187a",
+    "label": "HR_Onboarding_WITH_BRANCHES_AND_LOOPS",
+    "created_at": "2026-05-08T01:26:34.617650",
+    "members": {
+      "CCEL": "21b138b6-a1a3-4e7b-9e29-3d9f75a34881",
+      "Swimlane": "a1b48e76-130d-4705-a2d1-8be638d4f72b"
+    }
+  },
+  "299a74e8-5044-4b57-a586-93677375f8c0": {
+    "id": "299a74e8-5044-4b57-a586-93677375f8c0",
+    "label": "HR_Onboarding_OCEL",
+    "created_at": "2026-05-08T01:34:18.291571",
+    "members": {
+      "OCEL": "4c53d2e5-d381-4753-9a28-6471672fe9ff",
+      "CCEL": "cba79122-7ff6-4bdc-80ad-257fbd287e2d",
+      "Swimlane": "ac8479fe-9336-40b0-b854-5216232ef035"
+    }
+  },
+  "39c16834-7bae-44c0-ab06-20fb33ddc657": {
+    "id": "39c16834-7bae-44c0-ab06-20fb33ddc657",
+    "label": "HR_Onboarding_WITH_BRANCHES_AND_LOOPS",
+    "created_at": "2026-05-08T01:36:31.477590",
+    "members": {
+      "CCEL": "f0dadc11-0513-4bcd-897d-e1717dd23fe9",
+      "Swimlane": "9513f179-ab31-4e4d-99d5-64e491d68237"
+    }
+  },
+  "5bc75239-e1af-48a5-b8e8-e787634646a1": {
+    "id": "5bc75239-e1af-48a5-b8e8-e787634646a1",
+    "label": "HR_Onboarding_OCEL",
+    "created_at": "2026-05-08T01:36:59.963042",
+    "members": {
+      "OCEL": "90b2ce44-46dd-4cab-8062-58d2aa1957cc",
+      "CCEL": "b67c2b8d-ec44-4f2a-a085-d248fce7dff1",
+      "Swimlane": "fbfe8f35-af00-4468-a742-cab98c56f4bd"
+    }
   }
 }
