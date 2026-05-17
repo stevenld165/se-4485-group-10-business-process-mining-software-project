@@ -1,0 +1,60 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 2rem;
+}
+
+.header {
+  margin-bottom: 1.5rem;
+  flex-shrink: 0;
+}
+
+.title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0 0 0.25rem;
+}
+
+.subtitle {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+/* Stacked table blocks */
+.body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  overflow: hidden;
+}
+
+.tableBlock {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  /* Equal flex split when both are present */
+  flex: 1;
+}
+
+.tableBlockLabel {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-tertiary, #888);
+  margin-bottom: 6px;
+  flex-shrink: 0;
+}
+
+.tableWrapper {
+  flex: 1;
+  border-radius: var(--border-radius-lg, 12px);
+  border: 0.5px solid var(--color-border-tertiary);
+  background-color: white;
+  overflow: hidden;
+  min-height: 0;
+}
